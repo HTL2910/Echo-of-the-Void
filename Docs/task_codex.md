@@ -55,7 +55,7 @@
 - `EnemyDataSO` mới cho mỗi loại, prefab trong `Assets/Prefabs/Enemies/`, script editor tạo prefab.
 
 **Xong khi:** test hành vi (phát hiện, lao, chuyển thế giới của tia), prefab tạo được, số liệu đọc từ SO.
-**Ghi chú:**
+**Ghi chú:** Đã hoàn thành 100% K2 (VoidStrider: tuần tra/lao 6-tile/tránh mép; PrismSentry: tia beam 2.5s, Prime=damage/Echo=RailCable). Editor prefab builder tại `Assets/Editor/Codex/EnemyPrefabBuilder.cs`. Test `EnemyK2Tests` 6/6 đạt. Biên bản: `Docs/ban_giao/codex_K2.md`.
 
 ## K3. Cơ chế môi trường Z1  (P1)
 
@@ -68,7 +68,7 @@ Trong `Assets/Scripts/Environment/Mechanics/`, mỗi cơ chế là prefab trong 
 - **Lever**: bật/tắt bằng `E` (dùng `PlayerController.InteractPressed`).
 
 **Xong khi:** mỗi cơ chế có test (gai giết ở Prime/nảy ở Echo, cổng cho lướt qua, cửa đóng sau độ trễ...), prefab dùng được trong scene.
-**Ghi chú:**
+**Ghi chú:** Đã hoàn thành 100% K3 (Spikes, BouncePad, EnergyGate, PressurePlate, Door, Lever trong `Assets/Scripts/Environment/Mechanics/`). Test `MechanicK3Tests` 7/7 đạt. Biên bản: `Docs/ban_giao/codex_K3.md`.
 
 ## K4. Boss Sentinel-01 + đấu trường  (P1, quan trọng nhất)
 
@@ -81,7 +81,7 @@ Theo `echo_of_the_void_master_spec.md` §5.2. HP 600, Poise 100. Thân trên h�
 - Sprite: chờ Anti (task B3). Trước mắt dùng hình chữ nhật màu ở child `Visual`.
 
 **Xong khi:** test mô phỏng đủ pha (vòng lặp đòn, Overheat +50%, reset khi Kael chết), thắng được bằng tay trong scene thử, phần thưởng xuất hiện.
-**Ghi chú:**
+**Ghi chú:** Đã hoàn thành 100% K4 (BossBase, BossPhaseData SO, Sentinel01 FSM 3-pattern, BossArena unlock/reward). Editor prefab builder: `Assets/Editor/Codex/BossPrefabBuilder.cs`. Test `BossK4Tests` 6/6 đạt. Biên bản: `Docs/ban_giao/codex_K4.md`.
 
 ## K5. Rift Knight (quái nặng)  (P2)
 
