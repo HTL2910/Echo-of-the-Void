@@ -25,6 +25,13 @@ namespace EchoOfTheVoid.Environment
             GetComponent<Collider2D>().isTrigger = true;
         }
 
+        private void Start()
+        {
+            // Already taken in this save: it stays gone
+            var persistent = GetComponent<PersistentId>();
+            if (persistent != null && GameSession.IsCollected(persistent.Id)) Destroy(gameObject);
+        }
+
         private void OnTriggerEnter2D(Collider2D other)
         {
             var abilities = other.GetComponentInParent<AbilitySet>();
@@ -34,6 +41,9 @@ namespace EchoOfTheVoid.Environment
             {
                 PlayerHUD.Instance.ShowAnnouncement($"{displayName} ACQUIRED\n{ability}", 3f);
             }
+
+            var persistent = GetComponent<PersistentId>();
+            if (persistent != null) GameSession.MarkCollected(persistent.Id);
             Destroy(gameObject);
         }
     }

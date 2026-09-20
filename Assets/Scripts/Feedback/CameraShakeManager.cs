@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using EchoOfTheVoid.Settings;
 
 namespace EchoOfTheVoid.Feedback
 {
@@ -52,6 +53,11 @@ namespace EchoOfTheVoid.Feedback
 
         public void Shake(float amplitude, float frequency, float duration, float maxRoll)
         {
+            float strength = SettingsService.Current.screenShake; // accessibility slider (spec 9.6)
+            if (strength <= 0.001f) return;
+            amplitude *= strength;
+            maxRoll *= strength;
+
             if (_shakeRoutine != null)
             {
                 StopCoroutine(_shakeRoutine);

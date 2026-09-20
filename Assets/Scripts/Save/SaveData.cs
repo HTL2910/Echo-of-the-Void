@@ -26,5 +26,6 @@ namespace EchoOfTheVoid.Save
         // Persistent world state (stable ids from PersistentId components)
         public List<string> collectedIds = new List<string>();
         public List<string> bossDefeated = new List<string>();
+        public List<string> visitedRooms = new List<string>();   // for the map (spec 9.3)
     }
 }

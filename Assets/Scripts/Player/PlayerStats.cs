@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using EchoOfTheVoid.Settings;
 using EchoOfTheVoid.Core;
 using EchoOfTheVoid.Combat;
 using EchoOfTheVoid.Feedback;
@@ -88,6 +89,14 @@ namespace EchoOfTheVoid.Player
 
         public bool IsDead => _currentHealth <= 0;
 
+        /// <summary>Loading a save: set max/current health without i-frames or feedback.</summary>
+        public void RestoreProgress(int current, int max)
+        {
+            maxHealth = Mathf.Max(1, max);
+            _currentHealth = Mathf.Clamp(current, 1, maxHealth);
+            OnHealthChanged?.Invoke(_currentHealth, maxHealth);
+        }
+
         public void Heal(int amount)
         {
             if (IsDead) return;
@@ -109,12 +118,13 @@ namespace EchoOfTheVoid.Player
 
         public HitFeedback TakeDamage(DamageInfo info)
         {
-            if (_isInvulnerable || _currentHealth <= 0)
+            if (_isInvulnerable || _currentHealth <= 0 || info.Amount <= 0)
             {
                 return new HitFeedback(isDeflected: true, dealtDamage: 0, isDead: false);
             }
 
-            int finalDamage = info.Amount;
+            // Assist mode: reduced damage, never below 1 so hits still register
+            int finalDamage = Mathf.Max(1, Mathf.RoundToInt(info.Amount * SettingsService.Current.damageTakenMultiplier));
             _currentHealth = Mathf.Max(0, _currentHealth - finalDamage);
             OnHealthChanged?.Invoke(_currentHealth, maxHealth);
 
@@ -132,10 +142,12 @@ namespace EchoOfTheVoid.Player
 
             if (_currentHealth <= 0)
             {
+                AudioManager.Play(SfxGroup.Death);
                 OnPlayerDeath?.Invoke();
                 return new HitFeedback(isDeflected: false, dealtDamage: finalDamage, isDead: true);
             }
 
+            AudioManager.Play(SfxGroup.Hurt);
             StartCoroutine(IFrameRoutine());
             return new HitFeedback(isDeflected: false, dealtDamage: finalDamage, isDead: false);
         }
@@ -146,7 +158,8 @@ namespace EchoOfTheVoid.Player
             float elapsed = 0f;
             float blinkInterval = 0.08f;
 
-            while (elapsed < iFrameDuration)
+            float duration = SettingsService.Current.extendedIFrames ? iFrameDuration * 1.5f : iFrameDuration;
+            while (elapsed < duration)
             {
                 if (_renderer != null)
                 {

@@ -1,8 +1,22 @@
 using System.Collections.Generic;
 using UnityEngine;
+using EchoOfTheVoid.Settings;
 
 namespace EchoOfTheVoid.Core
 {
+    /// <summary>Sound effects that have several recorded variants (artists deliver 3 per group).</summary>
+    public enum SfxGroup
+    {
+        FootstepPrime, FootstepEcho, LandSoft, LandHard, Hurt, Death, StationActivate, AnchorPlace, AnchorSwap
+    }
+
+    [System.Serializable]
+    public class SfxGroupClips
+    {
+        public SfxGroup group;
+        public AudioClip[] clips;
+    }
+
     public class AudioManager : MonoBehaviour
     {
         public static AudioManager Instance { get; private set; }
@@ -16,6 +30,9 @@ namespace EchoOfTheVoid.Core
         [SerializeField] private AudioClip resonanceClip;
         [SerializeField] private AudioClip shiftDeniedClip;
 
+        [Header("Variant groups")]
+        [SerializeField] private List<SfxGroupClips> groups = new List<SfxGroupClips>();
+
         [Header("Audio Pool Settings")]
         [SerializeField] private int poolSize = 8;
 
@@ -24,6 +41,34 @@ namespace EchoOfTheVoid.Core
 
         private void OnEnable() => RealityEventBus.OnShiftDenied += PlayShiftDenied;
         private void OnDisable() => RealityEventBus.OnShiftDenied -= PlayShiftDenied;
+
+        /// <summary>Raised whenever a variant group is played (also lets tests observe what the game triggers).</summary>
+        public event System.Action<SfxGroup> GroupPlayed;
+
+        public void ConfigureGroup(SfxGroup group, AudioClip[] clips)
+        {
+            groups.RemoveAll(g => g.group == group);
+            groups.Add(new SfxGroupClips { group = group, clips = clips });
+        }
+
+        /// <summary>Plays a random variant of <paramref name="group"/>. Silent no-op if there is no AudioManager or no clip.</summary>
+        public static void Play(SfxGroup group, float volume = 1f)
+        {
+            if (Instance != null) Instance.PlayGroup(group, volume);
+        }
+
+        public void PlayGroup(SfxGroup group, float volume = 1f, float pitchRandomness = 0.05f)
+        {
+            foreach (var entry in groups)
+            {
+                if (entry.group != group || entry.clips == null || entry.clips.Length == 0) continue;
+                var clip = entry.clips[Random.Range(0, entry.clips.Length)];
+                if (clip == null) return;
+                PlaySound(clip, volume, pitchRandomness);
+                GroupPlayed?.Invoke(group);
+                return;
+            }
+        }
 
         public void PlayShiftDenied()
         {
@@ -77,7 +122,7 @@ namespace EchoOfTheVoid.Core
             if (src == null) return;
 
             src.pitch = 1f + Random.Range(-pitchRandomness, pitchRandomness);
-            src.PlayOneShot(clip, volume);
+            src.PlayOneShot(clip, volume * SettingsService.Current.sfxVolume);
         }
 
         public void PlaySlash()

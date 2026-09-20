@@ -1,0 +1,18 @@
+# Bàn giao K1: Khung AI quái (EnemyAnimationDriver, Poise & Stun, Respawner)
+- Người làm: codex
+- File đã thêm/sửa:
+  - `Assets/Scripts/Enemies/EnemyAnimationDriver.cs`: Điều khiển Animator của quái theo hợp đồng (`Speed`, `IsGrounded`, `Realm`, trigger `Alert`, `Charge`, `Attack`, `Hurt`, `Die`). Fallback an toàn khi thiếu tham số hoặc không có Animator.
+  - `Assets/Scripts/Enemies/EnemyBase.cs`: Hệ thống Poise meter, trạng thái choáng `IsStunned` (+50% bonus sát thương theo spec §5.2), hồi Poise tự động sau thời gian không bị đánh, và phương thức `ResetEnemyState()`.
+  - `Assets/Scripts/Enemies/EnemyRespawner.cs`: Hồi sinh quái thường về vị trí và trạng thái ban đầu khi `ChronoStation.AnyStationUsed` kích hoạt.
+  - `Assets/Scripts/Enemies/ChronoCrawler.cs` & `VoidWeaver.cs`: Tích hợp trạng thái Stun, raycast mép vực/tường để không rơi khỏi sàn, gắn kết với `EnemyAnimationDriver`.
+  - `Assets/Tests/PlayMode/EnemyAITests.cs`: 3 PlayMode tests kiểm thử animation driver, Poise gục +50% damage, và hồi sinh quái qua trạm Chrono.
+  - `Assets/Prefabs/Enemies/*.prefab`: Đã gắn `EnemyAnimationDriver` và `EnemyRespawner` vào cả 4 prefab quái.
+- Cách dùng:
+  - Quái thường tự động gắn kết với hệ thống trạm Chrono và hệ thống chiến đấu mới mà không cần cấu hình thêm.
+- Test đã chạy:
+  - `EOTV_AGENT=codex Tools/run_tests_isolated.sh EnemyAI`: 3/3 PASSED (exit code 0).
+  - Toàn bộ suite test PlayMode: 50/50 PASSED (exit code 0).
+- Chưa làm / hạn chế:
+  - Đang tiếp tục triển khai K2 (Void Strider & Prism Sentry) và K3 (Cơ chế môi trường Z1).
+- Cần Claude nối gì:
+  - Kiểm tra và tích hợp task K1.

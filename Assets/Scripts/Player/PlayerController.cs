@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using EchoOfTheVoid.Settings;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
@@ -70,6 +71,9 @@ namespace EchoOfTheVoid.Player
         private bool _canDash = true;
         private float _freezeVerticalTimer;
         private float _wallJumpLockTimer;
+        private float _inputLockTimer;
+        private float _lastFallSpeed;
+        private float _footstepTimer;
 
         public float HorizontalInput => _horizontalInput;
         public float FacingDirection => _facingDirection;
@@ -128,18 +132,21 @@ namespace EchoOfTheVoid.Player
         {
             HandleInputs();
             UpdateTimers();
+            UpdateFootsteps();
             _stateMachine.Update();
         }
 
         private void FixedUpdate()
         {
             CheckEnvironment();
+            if (!_isGrounded && _rb.linearVelocity.y < 0f) _lastFallSpeed = Mathf.Max(_lastFallSpeed, -_rb.linearVelocity.y);
             _stateMachine.FixedUpdate();
         }
 
         private void HandleInputs()
         {
             _frame = _input.Poll();
+            if (_inputLockTimer > 0f || GameFlow.IsPaused) _frame = default; // room transition / pause menu: ignore the player
 
             float moveX = _frame.Move;
             bool jumpPressed = _frame.JumpPressed;
@@ -192,6 +199,7 @@ namespace EchoOfTheVoid.Player
             if (_jumpBufferTimer > 0f) _jumpBufferTimer -= Time.deltaTime;
             if (_freezeVerticalTimer > 0f) _freezeVerticalTimer -= Time.deltaTime;
             if (_wallJumpLockTimer > 0f) _wallJumpLockTimer -= Time.deltaTime;
+            if (_inputLockTimer > 0f) _inputLockTimer -= Time.unscaledDeltaTime;
             if (_dashCooldownTimer > 0f)
             {
                 _dashCooldownTimer -= Time.deltaTime;
@@ -212,7 +220,7 @@ namespace EchoOfTheVoid.Player
 
             if (_isGrounded)
             {
-                _coyoteTimer = coyoteDuration;
+                _coyoteTimer = SettingsService.Current.extendedCoyoteTime ? coyoteDuration + 0.1f : coyoteDuration;
                 // Spec: Reset dash immediately upon landing
                 ResetDashCooldown();
             }
@@ -390,9 +398,28 @@ namespace EchoOfTheVoid.Player
             ResetVerticalVelocity();
         }
 
+        private void UpdateFootsteps()
+        {
+            float speed = Mathf.Abs(_rb.linearVelocity.x);
+            if (!_isGrounded || speed < 1.5f || GameFlow.IsPaused)
+            {
+                _footstepTimer = 0.05f; // first step lands soon after starting to run
+                return;
+            }
+
+            _footstepTimer -= Time.deltaTime;
+            if (_footstepTimer > 0f) return;
+
+            _footstepTimer = Mathf.Lerp(0.42f, 0.26f, Mathf.Clamp01(speed / maxSpeed));
+            bool echo = RealityManager.Instance != null && RealityManager.Instance.CurrentRealm == RealmType.Echo;
+            AudioManager.Play(echo ? SfxGroup.FootstepEcho : SfxGroup.FootstepPrime, 0.5f);
+        }
+
         public void TriggerSquashLand()
         {
             if (_squash != null) _squash.OnLand();
+            AudioManager.Play(_lastFallSpeed > 14f ? SfxGroup.LandHard : SfxGroup.LandSoft, 0.8f);
+            _lastFallSpeed = 0f;
             VfxLibrary.Play(VfxId.LandDust, FeetPosition);
         }
 
@@ -404,6 +431,14 @@ namespace EchoOfTheVoid.Player
                 return new Vector3(b.center.x, b.min.y, 0f);
             }
         }
+
+        /// <summary>Ignore the player's input for <paramref name="seconds"/> (room transitions, cutscenes).</summary>
+        public void LockInput(float seconds)
+        {
+            _inputLockTimer = Mathf.Max(_inputLockTimer, seconds);
+        }
+
+        public bool IsInputLocked => _inputLockTimer > 0f;
 
         /// <summary>Replace the input source (tests, cutscenes, replays).</summary>
         public void SetInput(IPlayerInput input)

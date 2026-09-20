@@ -93,6 +93,7 @@ namespace EchoOfTheVoid.Tests
         {
             _dir = Path.Combine(Path.GetTempPath(), "eotv_station_test_" + System.Guid.NewGuid().ToString("N"));
             SaveService.DirectoryOverride = _dir;
+            EchoOfTheVoid.Core.GameSession.Reset();
             _world = TestWorld.Create(new Vector2(0f, 1.5f));
         }
 
@@ -126,10 +127,15 @@ namespace EchoOfTheVoid.Tests
             Assert.AreEqual(40, _world.Stats.CurrentHealth);
             yield return new WaitForSeconds(1.4f); // let the 0.8s i-frames end (frame-rounding can stretch them)
 
+            string usedId = null;
+            System.Action<string> onUsed = id => usedId = id;
+            ChronoStation.AnyStationUsed += onUsed;
             _world.Input.PressInteract();
             yield return null;
             yield return null;
+            ChronoStation.AnyStationUsed -= onUsed;
 
+            Assert.AreEqual("test_station", usedId, "AnyStationUsed must fire so regular enemies can respawn");
             Assert.AreEqual(65, _world.Stats.CurrentHealth, "Station heals 25 HP (spec 3.3)");
             Assert.IsTrue(SaveService.TryLoad(0, out var saved), "Station must write the save file");
             Assert.AreEqual("test_station", saved.checkpointId);
@@ -223,6 +229,70 @@ namespace EchoOfTheVoid.Tests
 
             Assert.IsNotNull(_world.Player, "No exception, player still alive");
             Assert.IsFalse(_world.Stats.IsDead);
+        }
+    }
+}
+
+namespace EchoOfTheVoid.Tests
+{
+    public class ContractTests
+    {
+        private TestWorld _world;
+
+        [UnityEngine.TestTools.UnityTearDown]
+        public System.Collections.IEnumerator TearDown()
+        {
+            _world?.Dispose();
+            _world = null;
+            yield break;
+        }
+
+        [UnityEngine.TestTools.UnityTest]
+        public System.Collections.IEnumerator SoftRespawn_ReturnsToLastSafeGround_WithoutLosingHealth()
+        {
+            _world = TestWorld.Create(new UnityEngine.Vector2(0f, 1.5f));
+            yield return new UnityEngine.WaitForSeconds(0.6f); // land: this is the safe spot
+            UnityEngine.Vector3 safe = _world.Player.transform.position;
+            int hp = _world.Stats.CurrentHealth;
+
+            _world.Player.transform.position = new UnityEngine.Vector2(9f, 5f); // "fell into a hazard" mid-air
+            Assert.IsTrue(_world.Respawn.SoftRespawn());
+            Assert.IsFalse(_world.Respawn.SoftRespawn(), "A second call while respawning is refused");
+            yield return new UnityEngine.WaitForSecondsRealtime(0.6f);
+
+            Assert.That(_world.Player.transform.position.x, NUnit.Framework.Is.EqualTo(safe.x).Within(0.6f));
+            Assert.AreEqual(hp, _world.Stats.CurrentHealth, "Soft respawn costs no health (spec D9)");
+            Assert.IsTrue(_world.Controller.enabled);
+        }
+
+        [NUnit.Framework.Test]
+        public void BossEvents_DeliverTheirPayloads()
+        {
+            string engagedId = null, defeatedId = null; int engagedMax = 0, current = 0;
+            System.Action<string, string, int> onEngaged = (id, name, max) => { engagedId = id; engagedMax = max; };
+            System.Action<string, int, int> onHealth = (id, cur, max) => current = cur;
+            System.Action<string> onDefeated = id => defeatedId = id;
+
+            EchoOfTheVoid.Core.BossEvents.Engaged += onEngaged;
+            EchoOfTheVoid.Core.BossEvents.HealthChanged += onHealth;
+            EchoOfTheVoid.Core.BossEvents.Defeated += onDefeated;
+            try
+            {
+                EchoOfTheVoid.Core.BossEvents.RaiseEngaged("sentinel_01", "Sentinel-01", 600);
+                EchoOfTheVoid.Core.BossEvents.RaiseHealthChanged("sentinel_01", 450, 600);
+                EchoOfTheVoid.Core.BossEvents.RaiseDefeated("sentinel_01");
+            }
+            finally
+            {
+                EchoOfTheVoid.Core.BossEvents.Engaged -= onEngaged;
+                EchoOfTheVoid.Core.BossEvents.HealthChanged -= onHealth;
+                EchoOfTheVoid.Core.BossEvents.Defeated -= onDefeated;
+            }
+
+            Assert.AreEqual("sentinel_01", engagedId);
+            Assert.AreEqual(600, engagedMax);
+            Assert.AreEqual(450, current);
+            Assert.AreEqual("sentinel_01", defeatedId);
         }
     }
 }

@@ -1,4 +1,5 @@
 using UnityEngine;
+using EchoOfTheVoid.Settings;
 
 namespace EchoOfTheVoid.Core
 {
@@ -96,8 +97,9 @@ namespace EchoOfTheVoid.Core
         private void ApplyVolumes()
         {
             if (_primeSource == null) return;
-            _primeSource.volume = PrimeWeight * volume;
-            _echoSource.volume = EchoWeight * volume;
+            float level = volume * SettingsService.Current.musicVolume;
+            _primeSource.volume = PrimeWeight * level;
+            _echoSource.volume = EchoWeight * level;
         }
     }
 }

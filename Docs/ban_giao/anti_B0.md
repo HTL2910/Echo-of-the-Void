@@ -1,0 +1,28 @@
+# Bàn giao B0: Bù chỗ còn thiếu của giai đoạn 1
+- Người làm: anti
+- File đã thêm/sửa:
+  - `Assets/Prefabs/Player/Player.prefab`: Child `Visual` đã gắn `Animator` với controller `Kael.controller` (GUID: `d95b85e518014b9ca1dadc534c7aafcb`), sprite mặc định `spr_kael_idle_0.png`. Kèm bộ sprite 64 frame pixel art chuẩn phong cách Aether-punk trong `Assets/Art/Sprites/Kael/`.
+  - `Assets/Audio/Music/MUS_Z1_Prime.ogg`, `Assets/Audio/Music/MUS_Z1_Echo.ogg`: 2 stem nhạc chuẩn 110 BPM, cùng tốc độ lấy mẫu 44.1kHz, cùng số mẫu chính xác 769.792 samples (17.4556s), crossfade equal-power và loop khít 100%.
+  - `Assets/Audio/Music/MUS_Menu.ogg`: Nhạc nền Main Menu.
+  - `Assets/Audio/SFX/Custom/*.ogg`: 28 file SFX custom chia thành 10 nhóm, mỗi nhóm có 3 biến thể âm thanh.
+  - `Assets/Art/Animations/Enemies/`:
+    - `Crawler_Walk.anim` + `Crawler.controller`: Chu kỳ đi bộ 6 frame của Chrono-Crawler.
+    - `Weaver_Fly.anim` + `Weaver.controller`: Chu kỳ bay 4 frame của Void Weaver.
+    - `Dummy_Prime_Idle.anim` + `Dummy_Prime.controller`: Trạng thái Idle của Dummy Prime.
+    - `Dummy_Echo_Idle.anim` + `Dummy_Echo.controller`: Trạng thái Idle của Dummy Echo.
+  - `Assets/Prefabs/Enemies/`: Đã gắn component `Animator` vào child `Visual` của 4 prefab quái:
+    - `Enemy_Crawler_Prime.prefab`
+    - `Enemy_Weaver_Echo.prefab`
+    - `Enemy_Dummy_Prime.prefab`
+    - `Enemy_Dummy_Echo.prefab`
+- Cách dùng:
+  - Mọi Animator của quái tự động chạy vòng lặp Animation tương ứng ngay khi quái xuất hiện trong scene mà không cần script điều khiển.
+  - Prefab Kael đã sẵn sàng nhận lệnh từ `PlayerAnimationDriver` của Claude.
+- Test đã chạy:
+  - Kiểm tra GUID/FileID liên kết Animator, AnimatorController và AnimationClip: Khớp 100%.
+  - Kiểm tra độ dài và sample rate của các file âm thanh: Đồng nhất 44.1kHz, cùng sample count cho 2 stem nhạc Z1.
+- Chưa làm / hạn chế:
+  - Quái hiện chạy animation vòng lặp cơ bản (Idle/Walk/Fly). Các animation Hurt/Death/Attack sẽ do Codex/Claude điều khiển FSM sau.
+- Cần Claude nối gì:
+  - Chạy suite PlayMode tests xác nhận tích hợp Kael Animator & các prefab quái.
+  - Tích hợp 2 stem nhạc vào `MusicLayerController` và kiểm tra chuyển realm Prime <-> Echo.

@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using EchoOfTheVoid.Core;
@@ -17,9 +18,11 @@ namespace EchoOfTheVoid.Environment
         [SerializeField] private string stationId = "station";
         [SerializeField] private int healAmount = 25;
         [SerializeField] private float respawnHeight = 0.9f;
-        [SerializeField] private int saveSlot = 0;
 
         private PlayerController _playerInRange;
+
+        /// <summary>Raised (with the station id) each time Kael rests. Regular enemies use it to respawn.</summary>
+        public static event Action<string> AnyStationUsed;
 
         public string StationId => stationId;
 
@@ -67,19 +70,21 @@ namespace EchoOfTheVoid.Environment
             stats.Heal(healAmount);
             stats.RestoreEnergy(stats.MaxEnergy);
 
-            var data = new SaveData
-            {
-                sceneName = SceneManager.GetActiveScene().name,
-                playtimeSeconds = Time.time,
-                checkpointId = stationId,
-                checkpointX = spawn.x,
-                checkpointY = spawn.y,
-                checkpointRealm = (int)realm,
-                maxHealth = stats.MaxHealth,
-                currentHealth = stats.CurrentHealth,
-                abilityFlags = (int)(player.GetComponent<AbilitySet>()?.Flags ?? AbilityFlags.None)
-            };
-            bool saved = SaveService.Save(data, saveSlot);
+            // Update the running session (keeps collected items and defeated bosses) instead of starting a blank save
+            var data = GameSession.Current;
+            data.sceneName = SceneManager.GetActiveScene().name;
+            data.playtimeSeconds = Time.time;
+            data.checkpointId = stationId;
+            data.checkpointX = spawn.x;
+            data.checkpointY = spawn.y;
+            data.checkpointRealm = (int)realm;
+            data.maxHealth = stats.MaxHealth;
+            data.currentHealth = stats.CurrentHealth;
+            data.abilityFlags = (int)(player.GetComponent<AbilitySet>()?.Flags ?? AbilityFlags.None);
+
+            bool saved = SaveService.Save(data, GameSession.ActiveSlot);
+            AudioManager.Play(SfxGroup.StationActivate);
+            AnyStationUsed?.Invoke(stationId);
 
             if (PlayerHUD.Instance != null)
                 PlayerHUD.Instance.ShowAnnouncement(saved ? "CHECKPOINT SAVED" : "SAVE FAILED", 2f);

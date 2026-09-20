@@ -1,5 +1,7 @@
 using System.Collections;
 using UnityEngine;
+using EchoOfTheVoid.Core;
+using EchoOfTheVoid.Settings;
 
 namespace EchoOfTheVoid.Feedback
 {
@@ -21,6 +23,7 @@ namespace EchoOfTheVoid.Feedback
 
         public void TriggerHitStop(float duration, float timeScale = 0f)
         {
+            if (SettingsService.Current.disableHitstop) return; // accessibility (spec 9.6)
             if (duration <= 0f) return;
 
             if (_hitStopRoutine != null)
@@ -35,7 +38,7 @@ namespace EchoOfTheVoid.Feedback
             float originalTimeScale = 1f;
             Time.timeScale = targetTimeScale;
             yield return new WaitForSecondsRealtime(duration);
-            Time.timeScale = originalTimeScale;
+            Time.timeScale = GameFlow.RestingTimeScale; // never un-pause the game by ending a hitstop
             _hitStopRoutine = null;
         }
     }

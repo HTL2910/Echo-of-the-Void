@@ -11,6 +11,8 @@ using EchoOfTheVoid.Environment;
 using EchoOfTheVoid.Feedback;
 using EchoOfTheVoid.Player;
 using EchoOfTheVoid.Enemies;
+using EchoOfTheVoid.Bosses;
+using EchoOfTheVoid.Environment.Mechanics;
 using EchoOfTheVoid.UI;
 
 namespace EchoOfTheVoid.Editor
@@ -21,6 +23,7 @@ namespace EchoOfTheVoid.Editor
         private const string SLASH_SPRITE_PATH = "Assets/Sprites/SlashArc.png";
         private const string SCENE_DIR = "Assets/Scenes";
         private const string SCENE_PATH = "Assets/Scenes/Prototype_Level1.unity";
+        private const string MENU_SCENE_PATH = "Assets/Scenes/MainMenu.unity";
         private const string ENEMY_DATA_DIR = "Assets/Settings/Enemies";
         private const string PREFAB_DIR = "Assets/Prefabs";
 
@@ -93,6 +96,10 @@ namespace EchoOfTheVoid.Editor
             managersObj.AddComponent<RealityManager>();
             managersObj.AddComponent<HitStopManager>();
             managersObj.AddComponent<CameraShakeManager>();
+            managersObj.AddComponent<RoomManager>();
+            managersObj.AddComponent<BossHealthBar>().SetFont(AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/Orbitron-Variable.ttf"));
+            managersObj.AddComponent<PauseController>().SetFont(AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/SpaceMono-Regular.ttf"));
+            managersObj.AddComponent<EchoOfTheVoid.Save.SaveBootstrap>(); // applies Continue on scene start
 
             var audioMgr = managersObj.AddComponent<AudioManager>();
             AudioClip[] slashes = new AudioClip[]
@@ -120,6 +127,21 @@ namespace EchoOfTheVoid.Editor
                 vfx.Configure(id, AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/Prefabs/VFX/{VfxPrefabName(id)}.prefab"));
             }
             audioMgr.ConfigureShiftDenied(AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/SFX/InterfaceSounds/Audio/error_001.ogg"));
+
+            // Artist-recorded variants (Assets/Audio/SFX/Custom): footsteps, landings, hurt, death, station...
+            foreach (var entry in new[]
+            {
+                (SfxGroup.FootstepPrime, "SFX_Footstep_Prime_"), (SfxGroup.FootstepEcho, "SFX_Footstep_Echo_"),
+                (SfxGroup.LandSoft, "SFX_Land_Soft_"), (SfxGroup.LandHard, "SFX_Land_Hard_"),
+                (SfxGroup.Hurt, "SFX_Hurt_"), (SfxGroup.Death, "SFX_Death_"),
+                (SfxGroup.StationActivate, "SFX_Station_Activate_"),
+                (SfxGroup.AnchorPlace, "SFX_Anchor_Place_"), (SfxGroup.AnchorSwap, "SFX_Anchor_Swap_")
+            })
+            {
+                audioMgr.ConfigureGroup(entry.Item1, LoadVariants(entry.Item2));
+            }
+            managersObj.AddComponent<LowHealthAudio>().Configure(
+                AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/SFX/Custom/SFX_Heartbeat_Loop_01.ogg"));
 
             // 7. Setup Player
             GameObject playerObj = new GameObject("Player");
@@ -202,7 +224,7 @@ namespace EchoOfTheVoid.Editor
 
             // Boundary Walls
             CreatePlatform(levelRoot.transform, "Wall_Left_Outer", new Vector3(-24f, 6f, 0f), new Vector3(1.5f, 16f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
-            CreatePlatform(levelRoot.transform, "Wall_Right_Outer", new Vector3(38f, 6f, 0f), new Vector3(1.5f, 16f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
+            CreatePlatform(levelRoot.transform, "Wall_Right_Outer", new Vector3(80.5f, 6f, 0f), new Vector3(1.5f, 16f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
 
             // Wall Jump Shaft (Vertical Chute with open lower entrance)
             CreatePlatform(levelRoot.transform, "Wall_Shaft_Left", new Vector3(-18f, 4.5f, 0f), new Vector3(1.2f, 11f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
@@ -219,6 +241,15 @@ namespace EchoOfTheVoid.Editor
             CreateRealityPlatform(levelRoot.transform, "Platform_Prime_Final", new Vector3(14.5f, 6.8f, 0f), new Vector3(4.5f, 0.6f, 1f), RealmType.Prime, primeColor, sprPrimePlat, primeLayer);
             CreatePlatform(levelRoot.transform, "Goal_Altar", new Vector3(21f, 8.0f, 0f), new Vector3(6.5f, 0.8f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
             CreateLevelGoal(levelRoot.transform, "Level_Goal_Rift", new Vector3(21f, 9.6f, 0f), sprGoalRift);
+
+            // Room area for the camera (the sandbox is one room; real levels have one RoomBounds per room scene)
+            var roomGo = new GameObject("Room_Prototype");
+            roomGo.transform.SetParent(levelRoot.transform);
+            roomGo.transform.position = new Vector3(28f, 5.5f, 0f);
+            var roomBox = roomGo.AddComponent<BoxCollider2D>();
+            roomBox.isTrigger = true;
+            roomBox.size = new Vector2(104f, 17f); // x -24..80 (sandbox + boss arena), y -3..14
+            roomGo.AddComponent<RoomBounds>().Configure("prototype_room", "Prototype Sandbox");
 
             // Chrono Stations (checkpoint + save): start, before the combat arena, and the shaft reward ledge
             CreateStation(levelRoot.transform, "Station_Start", new Vector3(-7.5f, -1.75f, 0f), sprStation, "station_start");
@@ -252,6 +283,74 @@ namespace EchoOfTheVoid.Editor
             // VoidWeaver Mob (Echo Flying Sniper)
             CreateVoidWeaver(combatRoot.transform, "Weaver_Echo", new Vector3(26f, 3.0f, 0f), boxSprite, enemyLayer, weaverSO);
 
+            // ---------------------------------------------------------------------------------
+            // Integration: Codex's enemies, mechanics and the Sentinel-01 arena
+            // ---------------------------------------------------------------------------------
+            Codex.EnemyPrefabBuilder.CreateAllEnemyPrefabs();
+            Codex.BossPrefabBuilder.CreateAllBossPrefabs();
+            AssetDatabase.Refresh();
+
+            PlacePrefab("Assets/Prefabs/Enemies/VoidStrider.prefab", combatRoot.transform, "Strider_Prime", new Vector3(31f, -0.9f, 0f));
+            PlacePrefab("Assets/Prefabs/Enemies/PrismSentry.prefab", combatRoot.transform, "Sentry_Prime", new Vector3(29f, 7f, 0f));
+
+            int hazardLayer = GetOrCreateLayer("Hazard", 11);
+            var mechanicsRoot = new GameObject("Mechanics").transform;
+            mechanicsRoot.SetParent(levelRoot.transform);
+            // Placed in the level
+            BuildMechanic<Spikes>(mechanicsRoot, "Spikes", new Vector3(23.5f, -1.45f, 0f), new Vector2(3f, 0.6f), new Color(1f, 0.3f, 0.2f, 1f), boxSprite, hazardLayer, true, true);
+            BuildMechanic<BouncePad>(mechanicsRoot, "BouncePad", new Vector3(27.5f, -1.5f, 0f), new Vector2(1.6f, 0.5f), new Color(0.4f, 1f, 0.6f, 1f), boxSprite, neutralLayer, false, true);
+            BuildMechanic<EnergyGate>(mechanicsRoot, "EnergyGate", new Vector3(33f, 0.3f, 0f), new Vector2(0.5f, 4.1f), new Color(0.3f, 0.8f, 1f, 0.7f), boxSprite, hazardLayer, true, true);
+            // Prefab only (for the level builders): plate, door, lever
+            BuildMechanic<PressurePlate>(mechanicsRoot, "PressurePlate", Vector3.zero, new Vector2(1.5f, 0.2f), new Color(1f, 0.85f, 0.2f, 1f), boxSprite, neutralLayer, true, false);
+            BuildMechanic<Door>(mechanicsRoot, "Door", Vector3.zero, new Vector2(0.8f, 4f), new Color(0.5f, 0.55f, 0.65f, 1f), boxSprite, neutralLayer, false, false);
+            BuildMechanic<Lever>(mechanicsRoot, "Lever", Vector3.zero, new Vector2(0.8f, 1f), new Color(0.9f, 0.9f, 0.4f, 1f), boxSprite, GetOrCreateLayer("Interactable", 12), true, false);
+
+            // Boss arena (x 40..80): a station before the gate, the fight, then a reward and a station after
+            CreatePlatform(levelRoot.transform, "Floor_Arena", new Vector3(60f, -2.5f, 0f), new Vector3(40f, 1.5f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
+            CreateStation(levelRoot.transform, "Station_BossGate", new Vector3(38f, -1.75f, 0f), boxSprite, "station_boss");
+
+            var gate = new GameObject("Arena_Gate");
+            gate.transform.SetParent(levelRoot.transform);
+            gate.transform.position = new Vector3(42f, 4f, 0f);
+            gate.layer = neutralLayer;
+            gate.AddComponent<BoxCollider2D>().size = new Vector2(1f, 12f);
+            AddVisual(gate, boxSprite, new Vector2(1f, 12f), new Color(0.85f, 0.25f, 1f, 0.9f));
+            gate.SetActive(false); // the arena locks it when the fight starts
+
+            var bossGo = PlacePrefab("Assets/Prefabs/Bosses/Sentinel01.prefab", combatRoot.transform, "Sentinel01", new Vector3(68f, -0.25f, 0f));
+            var arenaGo = new GameObject("BossArena_Sentinel01");
+            arenaGo.transform.SetParent(levelRoot.transform);
+            arenaGo.transform.position = new Vector3(61f, 3f, 0f);
+            var arenaBox = arenaGo.AddComponent<BoxCollider2D>();
+            arenaBox.isTrigger = true;
+            arenaBox.size = new Vector2(34f, 14f); // x 44..78
+
+            if (bossGo != null)
+            {
+                var sentinel = bossGo.GetComponent<Sentinel01>();
+                SetPrivate(sentinel, "missileWarningPrefab", EnsureMissileWarningPrefab(boxSprite));
+                SetPrivate(sentinel, "missileSpawnPoint", bossGo.transform.Find("MissileSpawn"));
+                SetPrivate(sentinel, "laserOrigin", bossGo.transform.Find("LaserOrigin"));
+
+                var rewardPoint = new GameObject("RewardPoint").transform;
+                rewardPoint.SetParent(arenaGo.transform, false);
+                rewardPoint.position = new Vector3(60f, -0.9f, 0f);
+                var stationPoint = new GameObject("StationPoint").transform;
+                stationPoint.SetParent(arenaGo.transform, false);
+                stationPoint.position = new Vector3(47f, -1.75f, 0f);
+
+                var arena = arenaGo.AddComponent<BossArena>();
+                arena.Configure(sentinel, gate,
+                    EnsurePickupPrefab(boxSprite, AbilityFlags.GravityInversion, "GRAVITON CORE (test reward)", new Color(0.4f, 1f, 0.7f, 1f)),
+                    rewardPoint,
+                    AssetDatabase.LoadAssetAtPath<GameObject>($"{PREFAB_DIR}/Environment/Station_Chrono_station_boss.prefab"),
+                    stationPoint);
+            }
+            else
+            {
+                Debug.LogWarning("[SceneGenerator] Sentinel01 prefab missing: the boss arena has no boss");
+            }
+
             // 10. Setup Player HUD (Canvas UI)
             CreateHUD();
 
@@ -261,7 +360,8 @@ namespace EchoOfTheVoid.Editor
             Debug.Log($"[SceneGenerator] Saved Prototype Scene to {SCENE_PATH}");
 
             // 11. Fix Build Settings: Prototype_Level1.unity MUST be at Index 0!
-            ConfigureBuildSettings(SCENE_PATH);
+            GenerateMainMenuScene();
+            ConfigureBuildSettings(MENU_SCENE_PATH, SCENE_PATH);
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -581,6 +681,105 @@ namespace EchoOfTheVoid.Editor
             {
                 realmField.SetValue(enemy, realm);
             }
+        }
+
+        private static AudioClip[] LoadVariants(string prefix)
+        {
+            var clips = new System.Collections.Generic.List<AudioClip>();
+            foreach (string guid in AssetDatabase.FindAssets("t:AudioClip", new[] { "Assets/Audio/SFX/Custom" }))
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                if (!Path.GetFileName(path).StartsWith(prefix)) continue;
+                var clip = AssetDatabase.LoadAssetAtPath<AudioClip>(path);
+                if (clip != null) clips.Add(clip);
+            }
+            clips.Sort((a, b) => string.CompareOrdinal(a.name, b.name));
+            return clips.ToArray();
+        }
+
+        /// <summary>Instantiates a prefab (keeps the link) under a parent. Null if the prefab does not exist.</summary>
+        private static GameObject PlacePrefab(string path, Transform parent, string name, Vector3 position)
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            if (prefab == null)
+            {
+                Debug.LogWarning($"[SceneGenerator] Missing prefab {path}");
+                return null;
+            }
+            var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
+            instance.transform.SetParent(parent, false);
+            instance.transform.position = position;
+            instance.name = name;
+            return instance;
+        }
+
+        /// <summary>Builds a one-collider mechanic and saves it as a prefab; optionally places one instance in the level.</summary>
+        private static GameObject BuildMechanic<T>(Transform parent, string name, Vector3 position, Vector2 size, Color color,
+            Sprite sprite, int layer, bool trigger, bool place) where T : Component
+        {
+            var go = new GameObject(name);
+            go.layer = layer;
+            go.transform.position = position;
+            var col = go.AddComponent<BoxCollider2D>();
+            col.size = size;
+            col.isTrigger = trigger;
+            AddVisual(go, sprite, size, color);
+            go.AddComponent<T>();
+
+            var instance = SaveOrReusePrefab(go, "Mech_" + typeof(T).Name, "Mechanics");
+            if (!place)
+            {
+                Object.DestroyImmediate(instance);
+                return null;
+            }
+            instance.transform.SetParent(parent, true);
+            instance.transform.position = position;
+            instance.name = name;
+            return instance;
+        }
+
+        /// <summary>Makes sure a pickup prefab for <paramref name="ability"/> exists and returns the asset (no scene instance).</summary>
+        private static GameObject EnsurePickupPrefab(Sprite sprite, AbilityFlags ability, string displayName, Color color)
+        {
+            var go = new GameObject("Pickup_" + ability);
+            go.layer = GetOrCreateLayer("Interactable", 12);
+            var trigger = go.AddComponent<CircleCollider2D>();
+            trigger.isTrigger = true;
+            trigger.radius = 0.7f;
+            AddVisual(go, sprite, new Vector2(0.7f, 0.7f), color);
+            go.AddComponent<PersistentId>().SetId("pickup_" + ability.ToString().ToLowerInvariant());
+            go.AddComponent<AbilityPickup>().Configure(ability, displayName);
+
+            var instance = SaveOrReusePrefab(go, "Pickup_" + ability, "Environment");
+            Object.DestroyImmediate(instance);
+            return AssetDatabase.LoadAssetAtPath<GameObject>($"{PREFAB_DIR}/Environment/Pickup_{ability}.prefab");
+        }
+
+        private static GameObject EnsureMissileWarningPrefab(Sprite sprite)
+        {
+            var go = new GameObject("Fx_MissileWarning");
+            AddVisual(go, sprite, new Vector2(2f, 2f), new Color(1f, 0.2f, 0.2f, 0.4f));
+            go.GetComponentInChildren<SpriteRenderer>().sortingOrder = 5;
+            go.AddComponent<TimedDestroy>().SetLifetime(1.4f);
+
+            var instance = SaveOrReusePrefab(go, "Fx_MissileWarning", "Bosses");
+            Object.DestroyImmediate(instance);
+            return AssetDatabase.LoadAssetAtPath<GameObject>($"{PREFAB_DIR}/Bosses/Fx_MissileWarning.prefab");
+        }
+
+        /// <summary>Sets a private serialized object reference (the components expose no setter).</summary>
+        private static void SetPrivate(Object target, string property, Object value)
+        {
+            if (target == null) return;
+            var so = new SerializedObject(target);
+            var prop = so.FindProperty(property);
+            if (prop == null)
+            {
+                Debug.LogWarning($"[SceneGenerator] {target.GetType().Name} has no serialized field '{property}'");
+                return;
+            }
+            prop.objectReferenceValue = value;
+            so.ApplyModifiedPropertiesWithoutUndo();
         }
 
         private static void CreateHUD()
@@ -959,6 +1158,7 @@ namespace EchoOfTheVoid.Editor
             light.color = glowColor;
             light.intensity = 1.2f;
 
+            go.AddComponent<PersistentId>().SetId("pickup_" + ability.ToString().ToLowerInvariant());
             go.AddComponent<AbilityPickup>().Configure(ability, displayName);
             SaveOrUpdatePrefab(go, "Pickup_" + ability, "Environment");
         }
@@ -1031,15 +1231,38 @@ namespace EchoOfTheVoid.Editor
             SaveOrUpdatePrefab(goalObj, "Level_Goal_Rift", "Environment");
         }
 
-        private static void ConfigureBuildSettings(string mainScenePath)
+        /// <summary>Builds the title-screen scene: a camera and the self-building <see cref="MainMenuController"/>.</summary>
+        [MenuItem("Tools/Echo of the Void/Generate Main Menu Scene")]
+        public static void GenerateMainMenuScene()
         {
-            // Set Prototype_Level1.unity as Scene 0 (Default Scene for Builds)
-            var newScenes = new EditorBuildSettingsScene[]
-            {
-                new EditorBuildSettingsScene(mainScenePath, true)
-            };
-            EditorBuildSettings.scenes = newScenes;
-            Debug.Log($"[SceneGenerator] Build Settings updated: Scene 0 is {mainScenePath}");
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+
+            var cameraObj = new GameObject("Main Camera");
+            cameraObj.tag = "MainCamera";
+            cameraObj.transform.position = new Vector3(0f, 0f, -10f);
+            var cam = cameraObj.AddComponent<Camera>();
+            cam.orthographic = true;
+            cam.orthographicSize = 6.5f;
+            cam.clearFlags = CameraClearFlags.SolidColor;
+            cam.backgroundColor = new Color(0.03f, 0.04f, 0.08f, 1f);
+            cameraObj.AddComponent<AudioListener>();
+            cameraObj.AddComponent<UniversalAdditionalCameraData>();
+
+            var menuObj = new GameObject("MainMenu");
+            menuObj.AddComponent<MainMenuController>().SetFont(AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/SpaceMono-Regular.ttf"));
+
+            if (!Directory.Exists(SCENE_DIR)) Directory.CreateDirectory(SCENE_DIR);
+            EditorSceneManager.SaveScene(scene, MENU_SCENE_PATH);
+            Debug.Log($"[SceneGenerator] Saved Main Menu Scene to {MENU_SCENE_PATH}");
+        }
+
+        /// <summary>Build order: the title screen first, then the game.</summary>
+        private static void ConfigureBuildSettings(params string[] scenePaths)
+        {
+            var scenes = new EditorBuildSettingsScene[scenePaths.Length];
+            for (int i = 0; i < scenePaths.Length; i++) scenes[i] = new EditorBuildSettingsScene(scenePaths[i], true);
+            EditorBuildSettings.scenes = scenes;
+            Debug.Log($"[SceneGenerator] Build Settings updated: Scene 0 is {scenePaths[0]}");
         }
     }
 
