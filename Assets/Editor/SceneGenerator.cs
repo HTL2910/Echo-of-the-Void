@@ -59,14 +59,6 @@ namespace EchoOfTheVoid.Editor
             // Add direct CameraFollow2D (100% reliable tracking)
             var camFollow = cameraObj.AddComponent<CameraFollow2D>();
 
-            // Cinemachine Brain integration
-            var brainType = System.Type.GetType("Unity.Cinemachine.CinemachineBrain, Unity.Cinemachine") 
-                         ?? System.Type.GetType("Cinemachine.CinemachineBrain, Cinemachine");
-            if (brainType != null)
-            {
-                cameraObj.AddComponent(brainType);
-            }
-
             // 5. Setup 2D Global Light (URP)
             GameObject lightObj = new GameObject("Global 2D Light");
             var light2D = lightObj.AddComponent<Light2D>();
@@ -79,7 +71,6 @@ namespace EchoOfTheVoid.Editor
             managersObj.AddComponent<RealityManager>();
             managersObj.AddComponent<HitStopManager>();
             managersObj.AddComponent<CameraShakeManager>();
-            managersObj.AddComponent<RealityUIIndicator>();
 
             var audioMgr = managersObj.AddComponent<AudioManager>();
             AudioClip[] slashes = new AudioClip[]
@@ -121,26 +112,17 @@ namespace EchoOfTheVoid.Editor
             playerObj.AddComponent<SquashAndStretch>();
             playerObj.AddComponent<GhostTrail>();
             playerObj.AddComponent<PlayerStats>();
+            playerObj.AddComponent<PlayerRespawn>();
             var combat = playerObj.AddComponent<PlayerCombat>();
             combat.SetSlashSprite(slashSprite);
             combat.SetEnemyLayer(1 << enemyLayer);
 
-            var playerCtrl = playerObj.AddComponent<PlayerController>();
+            // PlayerRespawn has [RequireComponent(PlayerController)], so the controller already exists
+            var playerCtrl = playerObj.GetComponent<PlayerController>() ?? playerObj.AddComponent<PlayerController>();
             playerCtrl.SetGroundLayer((1 << neutralLayer) | (1 << primeLayer) | (1 << echoLayer));
 
-            // Wire camera target
+            // Wire camera target directly
             camFollow.SetTarget(playerObj.transform);
-
-            // Cinemachine Camera follow setup
-            var cmCamType = System.Type.GetType("Unity.Cinemachine.CinemachineCamera, Unity.Cinemachine") 
-                         ?? System.Type.GetType("Cinemachine.CinemachineVirtualCamera, Cinemachine");
-            if (cmCamType != null)
-            {
-                GameObject cmObj = new GameObject("CinemachineCamera");
-                var vcam = cmObj.AddComponent(cmCamType);
-                var followProp = cmCamType.GetProperty("Follow") ?? cmCamType.GetProperty("Target");
-                if (followProp != null) followProp.SetValue(vcam, playerObj.transform);
-            }
 
             // 8. Build Environment (Level 1-1 Sandbox)
             GameObject levelRoot = new GameObject("Environment");
@@ -156,15 +138,21 @@ namespace EchoOfTheVoid.Editor
             CreatePlatform(levelRoot.transform, "Wall_Left_Outer", new Vector3(-24f, 6f, 0f), new Vector3(1.5f, 16f, 1f), neutralColor, boxSprite, neutralLayer);
             CreatePlatform(levelRoot.transform, "Wall_Right_Outer", new Vector3(38f, 6f, 0f), new Vector3(1.5f, 16f, 1f), neutralColor, boxSprite, neutralLayer);
 
-            // Wall Jump Shaft (Vertical Chute for Wall Slide & Jump practice)
-            CreatePlatform(levelRoot.transform, "Wall_Shaft_Left", new Vector3(-18f, 4f, 0f), new Vector3(1.2f, 10f, 1f), neutralColor, boxSprite, neutralLayer);
-            CreatePlatform(levelRoot.transform, "Wall_Shaft_Right", new Vector3(-14.5f, 4f, 0f), new Vector3(1.2f, 10f, 1f), neutralColor, boxSprite, neutralLayer);
+            // Wall Jump Shaft (Vertical Chute with open lower entrance)
+            CreatePlatform(levelRoot.transform, "Wall_Shaft_Left", new Vector3(-18f, 4.5f, 0f), new Vector3(1.2f, 11f, 1f), neutralColor, boxSprite, neutralLayer);
+            // Right wall starts at y=1.5, leaving 3.25m clearance entrance at bottom
+            CreatePlatform(levelRoot.transform, "Wall_Shaft_Right", new Vector3(-15f, 5.75f, 0f), new Vector3(1.2f, 8.5f, 1f), neutralColor, boxSprite, neutralLayer);
+            // Top Reward Ledge
+            CreatePlatform(levelRoot.transform, "Shaft_Top_Ledge", new Vector3(-20.5f, 9.5f, 0f), new Vector3(4.5f, 0.8f, 1f), neutralColor, boxSprite, neutralLayer);
 
-            // Platforming Section: Alternating Reality Platforms
+            // Platforming Section: Alternating Reality Platforms leading to Exit Rift
             CreateRealityPlatform(levelRoot.transform, "Platform_Prime_1", new Vector3(-9f, 0f, 0f), new Vector3(4.5f, 0.6f, 1f), RealmType.Prime, primeColor, boxSprite, primeLayer);
             CreateRealityPlatform(levelRoot.transform, "Platform_Echo_1", new Vector3(-3f, 1.8f, 0f), new Vector3(4.5f, 0.6f, 1f), RealmType.Echo, echoColor, boxSprite, echoLayer);
             CreateRealityPlatform(levelRoot.transform, "Platform_Prime_2", new Vector3(3f, 3.5f, 0f), new Vector3(4.5f, 0.6f, 1f), RealmType.Prime, primeColor, boxSprite, primeLayer);
             CreateRealityPlatform(levelRoot.transform, "Platform_Echo_HighLedge", new Vector3(8f, 5.2f, 0f), new Vector3(5.5f, 0.6f, 1f), RealmType.Echo, echoColor, boxSprite, echoLayer);
+            CreateRealityPlatform(levelRoot.transform, "Platform_Prime_Final", new Vector3(14.5f, 6.8f, 0f), new Vector3(4.5f, 0.6f, 1f), RealmType.Prime, primeColor, boxSprite, primeLayer);
+            CreatePlatform(levelRoot.transform, "Goal_Altar", new Vector3(21f, 8.0f, 0f), new Vector3(6.5f, 0.8f, 1f), neutralColor, boxSprite, neutralLayer);
+            CreateLevelGoal(levelRoot.transform, "Level_Goal_Rift", new Vector3(21f, 9.6f, 0f), boxSprite);
 
             // 9. Combat Arena Section (Entities & Dummies)
             GameObject combatRoot = new GameObject("Combat_Entities");
@@ -377,8 +365,10 @@ namespace EchoOfTheVoid.Editor
             scaler.referenceResolution = new Vector2(1920, 1080);
             canvasObj.AddComponent<GraphicRaycaster>();
 
-            Font font = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/Orbitron-Variable.ttf")
-                     ?? Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            Font fontOrbitron = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/Orbitron-Variable.ttf")
+                             ?? Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            Font fontSpaceMono = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/SpaceMono-Regular.ttf")
+                              ?? fontOrbitron;
 
             // Panel Root
             GameObject panel = new GameObject("HUD_Panel");
@@ -390,7 +380,7 @@ namespace EchoOfTheVoid.Editor
             panelRect.anchoredPosition = new Vector2(30f, -30f);
             panelRect.sizeDelta = new Vector2(350f, 120f);
 
-            // Realm Indicator Text
+            // Realm Indicator Text (Orbitron - English)
             GameObject realmTextObj = new GameObject("Text_Realm");
             realmTextObj.transform.SetParent(panel.transform, false);
             RectTransform realmRect = realmTextObj.AddComponent<RectTransform>();
@@ -400,7 +390,7 @@ namespace EchoOfTheVoid.Editor
             realmRect.anchoredPosition = new Vector2(0f, 0f);
             realmRect.sizeDelta = new Vector2(300f, 30f);
             Text realmText = realmTextObj.AddComponent<Text>();
-            realmText.font = font;
+            realmText.font = fontOrbitron;
             realmText.fontSize = 20;
             realmText.fontStyle = FontStyle.Bold;
             realmText.alignment = TextAnchor.MiddleLeft;
@@ -484,7 +474,24 @@ namespace EchoOfTheVoid.Editor
             dashFill.fillMethod = Image.FillMethod.Radial360;
             dashFill.color = new Color(0f, 0f, 0f, 0.75f);
 
-            // Controls Guide (Bottom Center)
+            // Announcement Banner (Center Screen)
+            GameObject annObj = new GameObject("Text_Announcement");
+            annObj.transform.SetParent(canvasObj.transform, false);
+            RectTransform annRect = annObj.AddComponent<RectTransform>();
+            annRect.anchorMin = new Vector2(0.5f, 0.5f);
+            annRect.anchorMax = new Vector2(0.5f, 0.5f);
+            annRect.pivot = new Vector2(0.5f, 0.5f);
+            annRect.anchoredPosition = new Vector2(0f, 80f);
+            annRect.sizeDelta = new Vector2(900f, 100f);
+            Text annText = annObj.AddComponent<Text>();
+            annText.font = fontOrbitron;
+            annText.fontSize = 28;
+            annText.fontStyle = FontStyle.Bold;
+            annText.alignment = TextAnchor.MiddleCenter;
+            annText.color = new Color(1f, 0.85f, 0.2f, 1f);
+            annObj.SetActive(false);
+
+            // Controls Guide (Bottom Center - SpaceMono font per D11)
             GameObject guideObj = new GameObject("Controls_Guide");
             guideObj.transform.SetParent(canvasObj.transform, false);
             RectTransform guideRect = guideObj.AddComponent<RectTransform>();
@@ -492,17 +499,36 @@ namespace EchoOfTheVoid.Editor
             guideRect.anchorMax = new Vector2(0.5f, 0f);
             guideRect.pivot = new Vector2(0.5f, 0f);
             guideRect.anchoredPosition = new Vector2(0f, 25f);
-            guideRect.sizeDelta = new Vector2(1000f, 35f);
+            guideRect.sizeDelta = new Vector2(1100f, 35f);
             Text guideText = guideObj.AddComponent<Text>();
-            guideText.font = font;
-            guideText.fontSize = 15;
+            guideText.font = fontSpaceMono;
+            guideText.fontSize = 14;
             guideText.alignment = TextAnchor.MiddleCenter;
             guideText.color = new Color(0.85f, 0.9f, 0.95f, 0.85f);
-            guideText.text = "[A / D] Di Chuyển  |  [SPACE] Nhảy  |  [K] Dash  |  [J] Chém (Combo 3)  |  [SHIFT] Reality Shift  |  [U] Resonance";
+            guideText.text = "[A / D] Move  |  [SPACE] Jump  |  [K] Dash  |  [J] Attack  |  [SHIFT] Reality Shift  |  [U] Resonance";
 
             // Attach PlayerHUD component
             var hud = canvasObj.AddComponent<PlayerHUD>();
-            hud.BindElements(hpFill, ceFill, dashFill, realmText, null);
+            hud.BindElements(hpFill, ceFill, dashFill, realmText, null, annText);
+        }
+
+        private static void CreateLevelGoal(Transform parent, string name, Vector3 pos, Sprite sprite)
+        {
+            GameObject goalObj = new GameObject(name);
+            goalObj.transform.SetParent(parent);
+            goalObj.transform.position = pos;
+            goalObj.transform.localScale = new Vector3(1.6f, 2.8f, 1f);
+
+            var sr = goalObj.AddComponent<SpriteRenderer>();
+            sr.sprite = sprite;
+            sr.color = new Color(1f, 0.84f, 0.0f, 0.85f); // Golden Exit Rift
+            sr.sortingOrder = 5;
+
+            var col = goalObj.AddComponent<BoxCollider2D>();
+            col.isTrigger = true;
+            col.size = Vector2.one;
+
+            goalObj.AddComponent<LevelGoalTrigger>();
         }
 
         private static void ConfigureBuildSettings(string mainScenePath)
