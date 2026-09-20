@@ -4,6 +4,7 @@ using UnityEngine;
 using EchoOfTheVoid.Core;
 using EchoOfTheVoid.Combat;
 using EchoOfTheVoid.Feedback;
+using EchoOfTheVoid.UI;
 
 namespace EchoOfTheVoid.Player
 {
@@ -19,6 +20,7 @@ namespace EchoOfTheVoid.Player
         private float _currentEnergy;
         private bool _isInvulnerable;
         private SpriteRenderer _renderer;
+        private Vector3 _spawnPosition;
 
         public int CurrentHealth => _currentHealth;
         public int MaxHealth => maxHealth;
@@ -43,6 +45,7 @@ namespace EchoOfTheVoid.Player
 
         private void Start()
         {
+            _spawnPosition = transform.position;
             OnHealthChanged?.Invoke(_currentHealth, maxHealth);
             OnEnergyChanged?.Invoke(_currentEnergy, maxEnergy);
         }
@@ -81,6 +84,27 @@ namespace EchoOfTheVoid.Player
         public void SetInvulnerable(bool invulnerable)
         {
             _isInvulnerable = invulnerable;
+        }
+
+        public bool IsDead => _currentHealth <= 0;
+
+        public void Heal(int amount)
+        {
+            if (IsDead) return;
+            _currentHealth = Mathf.Min(maxHealth, _currentHealth + amount);
+            OnHealthChanged?.Invoke(_currentHealth, maxHealth);
+        }
+
+        public void Revive(int health)
+        {
+            StopAllCoroutines();
+            _currentHealth = Mathf.Clamp(health, 1, maxHealth);
+            _currentEnergy = maxEnergy;
+            OnHealthChanged?.Invoke(_currentHealth, maxHealth);
+            OnEnergyChanged?.Invoke(_currentEnergy, maxEnergy);
+            if (_renderer != null) _renderer.color = Color.white;
+            _isInvulnerable = false;
+            StartCoroutine(IFrameRoutine());
         }
 
         public HitFeedback TakeDamage(DamageInfo info)

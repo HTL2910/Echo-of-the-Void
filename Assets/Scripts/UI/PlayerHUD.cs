@@ -7,15 +7,29 @@ namespace EchoOfTheVoid.UI
 {
     public class PlayerHUD : MonoBehaviour
     {
+        public static PlayerHUD Instance { get; private set; }
+
         [Header("UI Element References")]
         [SerializeField] private Image healthBarFill;
         [SerializeField] private Image energyBarFill;
         [SerializeField] private Image dashCooldownFill;
         [SerializeField] private Text realmText;
         [SerializeField] private Image realmBadge;
+        [SerializeField] private Text announcementText;
 
         private PlayerStats _playerStats;
         private PlayerController _playerController;
+        private Coroutine _announcementRoutine;
+
+        private void Awake()
+        {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+            Instance = this;
+        }
 
         private void Start()
         {
@@ -104,13 +118,31 @@ namespace EchoOfTheVoid.UI
             }
         }
 
-        public void BindElements(Image hpFill, Image ceFill, Image dashFill, Text text, Image badge)
+        public void ShowAnnouncement(string message, float duration = 2f)
+        {
+            if (announcementText == null) return;
+            if (_announcementRoutine != null) StopCoroutine(_announcementRoutine);
+            _announcementRoutine = StartCoroutine(AnnouncementCoroutine(message, duration));
+        }
+
+        private System.Collections.IEnumerator AnnouncementCoroutine(string message, float duration)
+        {
+            announcementText.text = message;
+            announcementText.gameObject.SetActive(true);
+            yield return new WaitForSeconds(duration);
+            announcementText.gameObject.SetActive(false);
+            _announcementRoutine = null;
+        }
+
+        public void BindElements(Image hpFill, Image ceFill, Image dashFill, Text text, Image badge, Text announcement = null)
         {
             healthBarFill = hpFill;
             energyBarFill = ceFill;
             dashCooldownFill = dashFill;
             realmText = text;
             realmBadge = badge;
+            announcementText = announcement;
+            if (announcementText != null) announcementText.gameObject.SetActive(false);
         }
     }
 }

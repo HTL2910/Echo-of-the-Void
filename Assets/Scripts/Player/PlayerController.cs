@@ -406,5 +406,15 @@ namespace EchoOfTheVoid.Player
         {
             groundLayer = mask;
         }
+
+        public void ResetForRespawn()
+        {
+            _jumpBufferTimer = 0f;
+            _coyoteTimer = 0f;
+            _freezeVerticalTimer = 0f;
+            _rb.linearVelocity = Vector2.zero;
+            ResetDashCooldown();
+            _stateMachine.ChangeState(new PlayerIdleState());
+        }
     }
 }
