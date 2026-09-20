@@ -16,27 +16,38 @@ namespace EchoOfTheVoid.Editor
     public static class SceneGenerator
     {
         private const string SPRITE_PATH = "Assets/Sprites/square.png";
+        private const string SLASH_SPRITE_PATH = "Assets/Sprites/SlashArc.png";
         private const string SCENE_DIR = "Assets/Scenes";
         private const string SCENE_PATH = "Assets/Scenes/Prototype_Level1.unity";
+        private const string ENEMY_DATA_DIR = "Assets/Settings/Enemies";
 
         [MenuItem("Tools/Echo of the Void/Generate Prototype Scene")]
         public static void GeneratePrototypeScene()
         {
-            Debug.Log("[SceneGenerator] Generating Vertical Slice Prototype Level...");
+            Debug.Log("[SceneGenerator] Starting Vertical Slice Prototype Level Generation...");
 
-            // 1. Ensure Sprite Asset
+            // 1. Ensure Sprite & Slash Assets and Enemy ScriptableObjects
             Sprite boxSprite = EnsureSquareSprite();
+            Sprite slashSprite = EnsureSlashSprite();
+            AssetSetupUtility.EnsureEnemyDataAssets();
 
-            // 2. Create new Scene
+            // 2. Create new Empty Scene
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
-            // 3. Setup Camera & Managers
+            // 3. Resolve Layers
+            int neutralLayer = GetOrCreateLayer("Neutral", 6);
+            int primeLayer = GetOrCreateLayer("PrimeSolid", 7);
+            int echoLayer = GetOrCreateLayer("EchoSolid", 8);
+            int playerLayer = GetOrCreateLayer("Player", 9);
+            int enemyLayer = GetOrCreateLayer("Enemy", 10);
+
+            // 4. Setup Camera & Managers
             GameObject cameraObj = new GameObject("Main Camera");
             cameraObj.tag = "MainCamera";
-            cameraObj.transform.position = new Vector3(0f, 3f, -10f);
+            cameraObj.transform.position = new Vector3(0f, 2f, -10f);
             Camera cam = cameraObj.AddComponent<Camera>();
             cam.orthographic = true;
-            cam.orthographicSize = 7.0f;
+            cam.orthographicSize = 6.5f;
             cam.clearFlags = CameraClearFlags.SolidColor;
             cam.backgroundColor = new Color(0.04f, 0.06f, 0.09f, 1f); // Dark Void
             cameraObj.AddComponent<AudioListener>();
@@ -44,7 +55,10 @@ namespace EchoOfTheVoid.Editor
             var cameraData = cameraObj.AddComponent<UniversalAdditionalCameraData>();
             cameraData.renderPostProcessing = true;
 
-            // Try adding Cinemachine Brain if assembly is loaded
+            // Add direct CameraFollow2D (100% reliable tracking)
+            var camFollow = cameraObj.AddComponent<CameraFollow2D>();
+
+            // Cinemachine Brain integration
             var brainType = System.Type.GetType("Unity.Cinemachine.CinemachineBrain, Unity.Cinemachine") 
                          ?? System.Type.GetType("Cinemachine.CinemachineBrain, Cinemachine");
             if (brainType != null)
@@ -52,23 +66,24 @@ namespace EchoOfTheVoid.Editor
                 cameraObj.AddComponent(brainType);
             }
 
-            // 4. Setup 2D Global Light (URP)
+            // 5. Setup 2D Global Light (URP)
             GameObject lightObj = new GameObject("Global 2D Light");
             var light2D = lightObj.AddComponent<Light2D>();
             light2D.lightType = Light2D.LightType.Global;
             light2D.color = Color.white;
             light2D.intensity = 1.0f;
 
-            // 5. Setup Managers
+            // 6. Setup Managers
             GameObject managersObj = new GameObject("Managers");
             managersObj.AddComponent<RealityManager>();
             managersObj.AddComponent<HitStopManager>();
             managersObj.AddComponent<CameraShakeManager>();
             managersObj.AddComponent<RealityUIIndicator>();
 
-            // 6. Setup Player
+            // 7. Setup Player
             GameObject playerObj = new GameObject("Player");
             playerObj.tag = "Player";
+            playerObj.layer = playerLayer;
             playerObj.transform.position = new Vector3(-12f, 0f, 0f);
 
             var rb = playerObj.AddComponent<Rigidbody2D>();
@@ -91,72 +106,83 @@ namespace EchoOfTheVoid.Editor
             playerObj.AddComponent<SquashAndStretch>();
             playerObj.AddComponent<GhostTrail>();
             playerObj.AddComponent<PlayerStats>();
-            playerObj.AddComponent<PlayerCombat>();
-            playerObj.AddComponent<PlayerController>();
+            var combat = playerObj.AddComponent<PlayerCombat>();
+            combat.SetSlashSprite(slashSprite);
+            combat.SetEnemyLayer(1 << enemyLayer);
 
-            // Cinemachine Camera follow
+            var playerCtrl = playerObj.AddComponent<PlayerController>();
+            playerCtrl.SetGroundLayer((1 << neutralLayer) | (1 << primeLayer) | (1 << echoLayer));
+
+            // Wire camera target
+            camFollow.SetTarget(playerObj.transform);
+
+            // Cinemachine Camera follow setup
             var cmCamType = System.Type.GetType("Unity.Cinemachine.CinemachineCamera, Unity.Cinemachine") 
                          ?? System.Type.GetType("Cinemachine.CinemachineVirtualCamera, Cinemachine");
             if (cmCamType != null)
             {
                 GameObject cmObj = new GameObject("CinemachineCamera");
                 var vcam = cmObj.AddComponent(cmCamType);
-                var followProp = cmCamType.GetProperty("Follow");
+                var followProp = cmCamType.GetProperty("Follow") ?? cmCamType.GetProperty("Target");
                 if (followProp != null) followProp.SetValue(vcam, playerObj.transform);
-                var targetProp = cmCamType.GetProperty("Target");
-                if (targetProp != null) targetProp.SetValue(vcam, playerObj.transform);
             }
 
-            // 7. Build Environment (Level 1-1 Sandbox)
+            // 8. Build Environment (Level 1-1 Sandbox)
             GameObject levelRoot = new GameObject("Environment");
 
             Color neutralColor = new Color(0.2f, 0.24f, 0.28f, 1f);
             Color primeColor = new Color(0.0f, 0.85f, 1.0f, 1f);  // Cyan
             Color echoColor = new Color(0.85f, 0.25f, 1.0f, 1f); // Purple
 
-            // Main Arena Floor (Wide: 60 units)
-            CreatePlatform(levelRoot.transform, "Floor_Main", new Vector3(8f, -2.5f, 0f), new Vector3(64f, 1.5f, 1f), neutralColor, boxSprite);
+            // Main Arena Floor (Wide: 64 units)
+            CreatePlatform(levelRoot.transform, "Floor_Main", new Vector3(8f, -2.5f, 0f), new Vector3(64f, 1.5f, 1f), neutralColor, boxSprite, neutralLayer);
 
             // Boundary Walls
-            CreatePlatform(levelRoot.transform, "Wall_Left_Outer", new Vector3(-24f, 6f, 0f), new Vector3(1.5f, 16f, 1f), neutralColor, boxSprite);
-            CreatePlatform(levelRoot.transform, "Wall_Right_Outer", new Vector3(38f, 6f, 0f), new Vector3(1.5f, 16f, 1f), neutralColor, boxSprite);
+            CreatePlatform(levelRoot.transform, "Wall_Left_Outer", new Vector3(-24f, 6f, 0f), new Vector3(1.5f, 16f, 1f), neutralColor, boxSprite, neutralLayer);
+            CreatePlatform(levelRoot.transform, "Wall_Right_Outer", new Vector3(38f, 6f, 0f), new Vector3(1.5f, 16f, 1f), neutralColor, boxSprite, neutralLayer);
 
             // Wall Jump Shaft (Vertical Chute for Wall Slide & Jump practice)
-            CreatePlatform(levelRoot.transform, "Wall_Shaft_Left", new Vector3(-18f, 4f, 0f), new Vector3(1.2f, 10f, 1f), neutralColor, boxSprite);
-            CreatePlatform(levelRoot.transform, "Wall_Shaft_Right", new Vector3(-14.5f, 4f, 0f), new Vector3(1.2f, 10f, 1f), neutralColor, boxSprite);
+            CreatePlatform(levelRoot.transform, "Wall_Shaft_Left", new Vector3(-18f, 4f, 0f), new Vector3(1.2f, 10f, 1f), neutralColor, boxSprite, neutralLayer);
+            CreatePlatform(levelRoot.transform, "Wall_Shaft_Right", new Vector3(-14.5f, 4f, 0f), new Vector3(1.2f, 10f, 1f), neutralColor, boxSprite, neutralLayer);
 
-            // Platforming Section 1: Alternating Reality Platforms
-            CreateRealityPlatform(levelRoot.transform, "Platform_Prime_1", new Vector3(-9f, 0f, 0f), new Vector3(4.5f, 0.6f, 1f), RealmType.Prime, primeColor, boxSprite);
-            CreateRealityPlatform(levelRoot.transform, "Platform_Echo_1", new Vector3(-3f, 1.8f, 0f), new Vector3(4.5f, 0.6f, 1f), RealmType.Echo, echoColor, boxSprite);
-            CreateRealityPlatform(levelRoot.transform, "Platform_Prime_2", new Vector3(3f, 3.5f, 0f), new Vector3(4.5f, 0.6f, 1f), RealmType.Prime, primeColor, boxSprite);
-            CreateRealityPlatform(levelRoot.transform, "Platform_Echo_HighLedge", new Vector3(8f, 5.2f, 0f), new Vector3(5.5f, 0.6f, 1f), RealmType.Echo, echoColor, boxSprite);
+            // Platforming Section: Alternating Reality Platforms
+            CreateRealityPlatform(levelRoot.transform, "Platform_Prime_1", new Vector3(-9f, 0f, 0f), new Vector3(4.5f, 0.6f, 1f), RealmType.Prime, primeColor, boxSprite, primeLayer);
+            CreateRealityPlatform(levelRoot.transform, "Platform_Echo_1", new Vector3(-3f, 1.8f, 0f), new Vector3(4.5f, 0.6f, 1f), RealmType.Echo, echoColor, boxSprite, echoLayer);
+            CreateRealityPlatform(levelRoot.transform, "Platform_Prime_2", new Vector3(3f, 3.5f, 0f), new Vector3(4.5f, 0.6f, 1f), RealmType.Prime, primeColor, boxSprite, primeLayer);
+            CreateRealityPlatform(levelRoot.transform, "Platform_Echo_HighLedge", new Vector3(8f, 5.2f, 0f), new Vector3(5.5f, 0.6f, 1f), RealmType.Echo, echoColor, boxSprite, echoLayer);
 
-            // 8. Combat Arena Section (Entities & Dummies)
+            // 9. Combat Arena Section (Entities & Dummies)
             GameObject combatRoot = new GameObject("Combat_Entities");
 
+            // Load EnemyData ScriptableObjects
+            var dummyPrimeSO = AssetDatabase.LoadAssetAtPath<EnemyDataSO>($"{ENEMY_DATA_DIR}/EnemyData_DummyPrime.asset");
+            var dummyEchoSO = AssetDatabase.LoadAssetAtPath<EnemyDataSO>($"{ENEMY_DATA_DIR}/EnemyData_DummyEcho.asset");
+            var crawlerSO = AssetDatabase.LoadAssetAtPath<EnemyDataSO>($"{ENEMY_DATA_DIR}/EnemyData_ChronoCrawler.asset");
+            var weaverSO = AssetDatabase.LoadAssetAtPath<EnemyDataSO>($"{ENEMY_DATA_DIR}/EnemyData_VoidWeaver.asset");
+
             // Training Dummy Prime (Cyan)
-            CreateDummy(combatRoot.transform, "Dummy_Prime", new Vector3(10f, -1.2f, 0f), RealmType.Prime, boxSprite);
+            CreateDummy(combatRoot.transform, "Dummy_Prime", new Vector3(10f, -1.2f, 0f), RealmType.Prime, boxSprite, enemyLayer, dummyPrimeSO);
 
             // Training Dummy Echo (Purple)
-            CreateDummy(combatRoot.transform, "Dummy_Echo", new Vector3(14f, -1.2f, 0f), RealmType.Echo, boxSprite);
+            CreateDummy(combatRoot.transform, "Dummy_Echo", new Vector3(14f, -1.2f, 0f), RealmType.Echo, boxSprite, enemyLayer, dummyEchoSO);
 
             // ChronoCrawler Mob (Prime Crawler)
-            CreateCrawler(combatRoot.transform, "Crawler_Prime", new Vector3(20f, -1.2f, 0f), boxSprite);
+            CreateCrawler(combatRoot.transform, "Crawler_Prime", new Vector3(20f, -1.2f, 0f), boxSprite, enemyLayer, crawlerSO);
 
             // VoidWeaver Mob (Echo Flying Sniper)
-            CreateVoidWeaver(combatRoot.transform, "Weaver_Echo", new Vector3(26f, 3.0f, 0f), boxSprite);
+            CreateVoidWeaver(combatRoot.transform, "Weaver_Echo", new Vector3(26f, 3.0f, 0f), boxSprite, enemyLayer, weaverSO);
 
-            // 9. Save Scene
+            // 10. Save Scene
             if (!Directory.Exists(SCENE_DIR)) Directory.CreateDirectory(SCENE_DIR);
             EditorSceneManager.SaveScene(scene, SCENE_PATH);
             Debug.Log($"[SceneGenerator] Saved Prototype Scene to {SCENE_PATH}");
 
-            // Ensure in Build Settings
-            EnsureBuildSettings(SCENE_PATH);
+            // 11. Fix Build Settings: Prototype_Level1.unity MUST be at Index 0!
+            ConfigureBuildSettings(SCENE_PATH);
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            Debug.Log("[SceneGenerator] Generation completed successfully!");
+            Debug.Log("[SceneGenerator] Scene generation and Build Settings configured successfully!");
         }
 
         private static Sprite EnsureSquareSprite()
@@ -184,12 +210,35 @@ namespace EchoOfTheVoid.Editor
             return AssetDatabase.LoadAssetAtPath<Sprite>(SPRITE_PATH);
         }
 
-        private static void CreatePlatform(Transform parent, string name, Vector3 pos, Vector3 size, Color color, Sprite sprite)
+        private static Sprite EnsureSlashSprite()
+        {
+            if (File.Exists(SLASH_SPRITE_PATH))
+            {
+                TextureImporter importer = AssetImporter.GetAtPath(SLASH_SPRITE_PATH) as TextureImporter;
+                if (importer != null && importer.textureType != TextureImporterType.Sprite)
+                {
+                    importer.textureType = TextureImporterType.Sprite;
+                    importer.filterMode = FilterMode.Point;
+                    importer.SaveAndReimport();
+                }
+                return AssetDatabase.LoadAssetAtPath<Sprite>(SLASH_SPRITE_PATH);
+            }
+            return EnsureSquareSprite();
+        }
+
+        private static int GetOrCreateLayer(string name, int fallbackIndex)
+        {
+            int layer = LayerMask.NameToLayer(name);
+            return (layer != -1) ? layer : fallbackIndex;
+        }
+
+        private static void CreatePlatform(Transform parent, string name, Vector3 pos, Vector3 size, Color color, Sprite sprite, int layer)
         {
             GameObject obj = new GameObject(name);
             obj.transform.SetParent(parent);
             obj.transform.position = pos;
             obj.transform.localScale = size;
+            obj.layer = layer;
 
             var renderer = obj.AddComponent<SpriteRenderer>();
             renderer.sprite = sprite;
@@ -199,12 +248,13 @@ namespace EchoOfTheVoid.Editor
             col.size = Vector2.one;
         }
 
-        private static void CreateRealityPlatform(Transform parent, string name, Vector3 pos, Vector3 size, RealmType realm, Color color, Sprite sprite)
+        private static void CreateRealityPlatform(Transform parent, string name, Vector3 pos, Vector3 size, RealmType realm, Color color, Sprite sprite, int layer)
         {
             GameObject obj = new GameObject(name);
             obj.transform.SetParent(parent);
             obj.transform.position = pos;
             obj.transform.localScale = size;
+            obj.layer = layer;
 
             var renderer = obj.AddComponent<SpriteRenderer>();
             renderer.sprite = sprite;
@@ -217,12 +267,13 @@ namespace EchoOfTheVoid.Editor
             realityPlat.Configure(realm, color);
         }
 
-        private static void CreateDummy(Transform parent, string name, Vector3 pos, RealmType realm, Sprite sprite)
+        private static void CreateDummy(Transform parent, string name, Vector3 pos, RealmType realm, Sprite sprite, int layer, EnemyDataSO data)
         {
             GameObject obj = new GameObject(name);
             obj.transform.SetParent(parent);
             obj.transform.position = pos;
             obj.transform.localScale = new Vector3(1.2f, 2.0f, 1f);
+            obj.layer = layer;
 
             var rb = obj.AddComponent<Rigidbody2D>();
             rb.bodyType = RigidbodyType2D.Dynamic;
@@ -236,14 +287,16 @@ namespace EchoOfTheVoid.Editor
             sr.sprite = sprite;
 
             var dummy = obj.AddComponent<TrainingDummy>();
+            SetEnemyDataField(dummy, data, realm);
         }
 
-        private static void CreateCrawler(Transform parent, string name, Vector3 pos, Sprite sprite)
+        private static void CreateCrawler(Transform parent, string name, Vector3 pos, Sprite sprite, int layer, EnemyDataSO data)
         {
             GameObject obj = new GameObject(name);
             obj.transform.SetParent(parent);
             obj.transform.position = pos;
             obj.transform.localScale = new Vector3(1.4f, 1.0f, 1f);
+            obj.layer = layer;
 
             var rb = obj.AddComponent<Rigidbody2D>();
             rb.bodyType = RigidbodyType2D.Dynamic;
@@ -255,15 +308,17 @@ namespace EchoOfTheVoid.Editor
             var sr = obj.AddComponent<SpriteRenderer>();
             sr.sprite = sprite;
 
-            obj.AddComponent<ChronoCrawler>();
+            var crawler = obj.AddComponent<ChronoCrawler>();
+            SetEnemyDataField(crawler, data, RealmType.Prime);
         }
 
-        private static void CreateVoidWeaver(Transform parent, string name, Vector3 pos, Sprite sprite)
+        private static void CreateVoidWeaver(Transform parent, string name, Vector3 pos, Sprite sprite, int layer, EnemyDataSO data)
         {
             GameObject obj = new GameObject(name);
             obj.transform.SetParent(parent);
             obj.transform.position = pos;
             obj.transform.localScale = new Vector3(1.2f, 1.2f, 1f);
+            obj.layer = layer;
 
             var rb = obj.AddComponent<Rigidbody2D>();
             rb.bodyType = RigidbodyType2D.Dynamic;
@@ -276,20 +331,33 @@ namespace EchoOfTheVoid.Editor
             var sr = obj.AddComponent<SpriteRenderer>();
             sr.sprite = sprite;
 
-            obj.AddComponent<VoidWeaver>();
+            var weaver = obj.AddComponent<VoidWeaver>();
+            SetEnemyDataField(weaver, data, RealmType.Echo);
         }
 
-        private static void EnsureBuildSettings(string scenePath)
+        private static void SetEnemyDataField(EnemyBase enemy, EnemyDataSO data, RealmType realm)
         {
-            var scenes = EditorBuildSettings.scenes;
-            foreach (var s in scenes)
+            var field = typeof(EnemyBase).GetField("enemyData", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (field != null && data != null)
             {
-                if (s.path == scenePath) return;
+                field.SetValue(enemy, data);
             }
-            var newScenes = new EditorBuildSettingsScene[scenes.Length + 1];
-            scenes.CopyTo(newScenes, 0);
-            newScenes[newScenes.Length - 1] = new EditorBuildSettingsScene(scenePath, true);
+            var realmField = typeof(EnemyBase).GetField("customRealm", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (realmField != null)
+            {
+                realmField.SetValue(enemy, realm);
+            }
+        }
+
+        private static void ConfigureBuildSettings(string mainScenePath)
+        {
+            // Set Prototype_Level1.unity as Scene 0 (Default Scene for Builds)
+            var newScenes = new EditorBuildSettingsScene[]
+            {
+                new EditorBuildSettingsScene(mainScenePath, true)
+            };
             EditorBuildSettings.scenes = newScenes;
+            Debug.Log($"[SceneGenerator] Build Settings updated: Scene 0 is {mainScenePath}");
         }
     }
 }
