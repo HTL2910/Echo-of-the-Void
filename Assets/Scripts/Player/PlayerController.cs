@@ -52,6 +52,8 @@ namespace EchoOfTheVoid.Player
 
         // Runtime State
         private PlayerStateMachine _stateMachine;
+        private IPlayerInput _input = new DevicePlayerInput();
+        private PlayerInputFrame _frame;
         private float _horizontalInput;
         private float _facingDirection = 1f;
         private bool _isGrounded;
@@ -128,48 +130,14 @@ namespace EchoOfTheVoid.Player
 
         private void HandleInputs()
         {
-            float moveX = 0f;
-            bool jumpPressed = false;
-            bool jumpReleased = false;
-            bool shiftPressed = false;
-            bool attackPressed = false;
-            bool resonancePressed = false;
+            _frame = _input.Poll();
 
-#if ENABLE_INPUT_SYSTEM
-            if (Keyboard.current != null)
-            {
-                if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed) moveX -= 1f;
-                if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed) moveX += 1f;
-
-                if (Keyboard.current.spaceKey.wasPressedThisFrame || Keyboard.current.wKey.wasPressedThisFrame) jumpPressed = true;
-                if (Keyboard.current.spaceKey.wasReleasedThisFrame || Keyboard.current.wKey.wasReleasedThisFrame) jumpReleased = true;
-
-                // SPEC: Reality Shift is LeftShift ONLY! Key E is reserved for Interaction (D10).
-                if (Keyboard.current.leftShiftKey.wasPressedThisFrame || Keyboard.current.rightShiftKey.wasPressedThisFrame) shiftPressed = true;
-
-                if (Keyboard.current.jKey.wasPressedThisFrame || Keyboard.current.zKey.wasPressedThisFrame) attackPressed = true;
-                if (Keyboard.current.uKey.wasPressedThisFrame || Keyboard.current.lKey.wasPressedThisFrame) resonancePressed = true;
-            }
-
-            if (Gamepad.current != null)
-            {
-                float stickX = Gamepad.current.leftStick.x.ReadValue();
-                if (Mathf.Abs(stickX) > 0.15f) moveX = stickX;
-
-                if (Gamepad.current.buttonSouth.wasPressedThisFrame) jumpPressed = true;
-                if (Gamepad.current.buttonSouth.wasReleasedThisFrame) jumpReleased = true;
-                if (Gamepad.current.rightShoulder.wasPressedThisFrame) shiftPressed = true; // RB
-                if (Gamepad.current.buttonWest.wasPressedThisFrame) attackPressed = true;     // X
-                if (Gamepad.current.buttonNorth.wasPressedThisFrame) resonancePressed = true; // Y
-            }
-#else
-            moveX = Input.GetAxisRaw("Horizontal");
-            if (Input.GetButtonDown("Jump") || Input.GetKeyDown(KeyCode.Space)) jumpPressed = true;
-            if (Input.GetButtonUp("Jump") || Input.GetKeyUp(KeyCode.Space)) jumpReleased = true;
-            if (Input.GetKeyDown(KeyCode.LeftShift)) shiftPressed = true;
-            if (Input.GetKeyDown(KeyCode.J) || Input.GetKeyDown(KeyCode.Z)) attackPressed = true;
-            if (Input.GetKeyDown(KeyCode.U) || Input.GetKeyDown(KeyCode.L)) resonancePressed = true;
-#endif
+            float moveX = _frame.Move;
+            bool jumpPressed = _frame.JumpPressed;
+            bool jumpReleased = _frame.JumpReleased;
+            bool shiftPressed = _frame.ShiftPressed;
+            bool attackPressed = _frame.AttackPressed;
+            bool resonancePressed = _frame.ResonancePressed;
 
             _horizontalInput = Mathf.Clamp(moveX, -1f, 1f);
 
@@ -224,8 +192,10 @@ namespace EchoOfTheVoid.Player
         private void CheckEnvironment()
         {
             // Ground Check
-            Vector2 origin = (Vector2)transform.position + _collider.offset - new Vector2(0f, _collider.size.y * 0.5f);
-            Vector2 size = new Vector2(_collider.size.x * 0.85f, groundCheckDistance);
+            // Use world-space bounds so the check is correct whatever the transform scale is
+            Bounds bounds = _collider.bounds;
+            Vector2 size = new Vector2(bounds.size.x * 0.85f, groundCheckDistance);
+            Vector2 origin = new Vector2(bounds.center.x, bounds.min.y + groundCheckDistance * 0.5f);
 
             RaycastHit2D hit = Physics2D.BoxCast(origin, size, 0f, Vector2.down, groundCheckDistance, groundLayer);
             _isGrounded = hit.collider != null && hit.collider.gameObject != gameObject;
@@ -243,10 +213,13 @@ namespace EchoOfTheVoid.Player
 
             if (!_isGrounded)
             {
-                Vector2 wallOrigin = (Vector2)transform.position + _collider.offset;
-                Vector2 wallSize = new Vector2(wallCheckDistance, _collider.size.y * 0.7f);
+                Bounds wallBounds = _collider.bounds;
+                Vector2 wallSize = new Vector2(0.05f, wallBounds.size.y * 0.7f);
+                float edgeInset = wallBounds.extents.x - wallSize.x * 0.5f;
+                Vector2 wallOriginRight = new Vector2(wallBounds.center.x + edgeInset, wallBounds.center.y);
+                Vector2 wallOriginLeft = new Vector2(wallBounds.center.x - edgeInset, wallBounds.center.y);
 
-                RaycastHit2D hitRight = Physics2D.BoxCast(wallOrigin, wallSize, 0f, Vector2.right, wallCheckDistance, groundLayer);
+                RaycastHit2D hitRight = Physics2D.BoxCast(wallOriginRight, wallSize, 0f, Vector2.right, wallCheckDistance, groundLayer);
                 if (hitRight.collider != null && hitRight.collider.gameObject != gameObject)
                 {
                     _isTouchingWall = true;
@@ -254,7 +227,7 @@ namespace EchoOfTheVoid.Player
                 }
                 else
                 {
-                    RaycastHit2D hitLeft = Physics2D.BoxCast(wallOrigin, wallSize, 0f, Vector2.left, wallCheckDistance, groundLayer);
+                    RaycastHit2D hitLeft = Physics2D.BoxCast(wallOriginLeft, wallSize, 0f, Vector2.left, wallCheckDistance, groundLayer);
                     if (hitLeft.collider != null && hitLeft.collider.gameObject != gameObject)
                     {
                         _isTouchingWall = true;
@@ -282,12 +255,7 @@ namespace EchoOfTheVoid.Player
 
         public bool CheckAndConsumeDash()
         {
-#if ENABLE_INPUT_SYSTEM
-            bool dashInput = (Keyboard.current != null && (Keyboard.current.kKey.wasPressedThisFrame || Keyboard.current.leftCtrlKey.wasPressedThisFrame))
-                          || (Gamepad.current != null && (Gamepad.current.buttonEast.wasPressedThisFrame || Gamepad.current.rightTrigger.wasPressedThisFrame));
-#else
-            bool dashInput = Input.GetKeyDown(KeyCode.K) || Input.GetKeyDown(KeyCode.LeftControl);
-#endif
+            bool dashInput = _frame.DashPressed;
             if (dashInput && _canDash && _dashCooldownTimer <= 0f)
             {
                 _canDash = false;
@@ -400,6 +368,12 @@ namespace EchoOfTheVoid.Player
         public void TriggerSquashLand()
         {
             if (_squash != null) _squash.OnLand();
+        }
+
+        /// <summary>Replace the input source (tests, cutscenes, replays).</summary>
+        public void SetInput(IPlayerInput input)
+        {
+            _input = input ?? new DevicePlayerInput();
         }
 
         public void SetGroundLayer(LayerMask mask)

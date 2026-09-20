@@ -35,7 +35,9 @@ namespace EchoOfTheVoid.Player.States
                 return;
             }
 
-            if (!player.IsGrounded && player.LinearVelocity.y < -0.1f)
+            // Idle/Run apply no gravity, so leaving the ground must hand over to Fall at once
+            // (waiting for vy < 0 would leave Kael hovering forever)
+            if (!player.IsGrounded)
             {
                 player.ChangeState(new PlayerFallState());
             }
@@ -79,7 +81,7 @@ namespace EchoOfTheVoid.Player.States
                 return;
             }
 
-            if (!player.IsGrounded && player.LinearVelocity.y < -0.1f)
+            if (!player.IsGrounded)
             {
                 player.ChangeState(new PlayerFallState());
             }
