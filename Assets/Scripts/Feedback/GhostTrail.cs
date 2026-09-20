@@ -50,9 +50,10 @@ namespace EchoOfTheVoid.Feedback
             if (sourceRenderer == null || sourceRenderer.sprite == null) return;
 
             GameObject ghostObj = new GameObject("GhostTrail_Clone");
-            ghostObj.transform.position = transform.position;
-            ghostObj.transform.rotation = transform.rotation;
-            ghostObj.transform.localScale = transform.localScale;
+            Transform source = sourceRenderer.transform;
+            ghostObj.transform.position = source.position;
+            ghostObj.transform.rotation = source.rotation;
+            ghostObj.transform.localScale = source.lossyScale;
 
             SpriteRenderer sr = ghostObj.AddComponent<SpriteRenderer>();
             sr.sprite = sourceRenderer.sprite;

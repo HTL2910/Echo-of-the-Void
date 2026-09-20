@@ -12,7 +12,12 @@ namespace EchoOfTheVoid.Feedback
 
         private void Awake()
         {
-            if (targetVisual == null) targetVisual = transform;
+            // Never squash the physics root: prefer the sprite child ("Visual") so colliders keep their size
+            if (targetVisual == null)
+            {
+                var sr = GetComponentInChildren<SpriteRenderer>();
+                targetVisual = (sr != null) ? sr.transform : transform;
+            }
             _originalScale = targetVisual.localScale;
         }
 
