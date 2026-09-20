@@ -341,6 +341,7 @@ namespace EchoOfTheVoid.Player
         {
             _rb.linearVelocity = new Vector2(_rb.linearVelocity.x, _jumpVelocity);
             if (_squash != null) _squash.OnJump();
+            if (AudioManager.Instance != null) AudioManager.Instance.PlayJump();
         }
 
         public void ExecuteWallJump()
@@ -350,6 +351,7 @@ namespace EchoOfTheVoid.Player
             _facingDirection = -_wallDirection;
             if (_renderer != null) _renderer.flipX = (_facingDirection < 0f);
             if (_squash != null) _squash.OnJump();
+            if (AudioManager.Instance != null) AudioManager.Instance.PlayJump();
         }
 
         public void StartDash()
@@ -357,6 +359,7 @@ namespace EchoOfTheVoid.Player
             if (_stats != null) _stats.SetInvulnerable(true);
             _rb.linearVelocity = new Vector2(_facingDirection * dashSpeed, 0f);
             if (_squash != null) _squash.OnDash();
+            if (AudioManager.Instance != null) AudioManager.Instance.PlayDash();
 
             RealmType realm = (RealityManager.Instance != null) ? RealityManager.Instance.CurrentRealm : RealmType.Prime;
             if (_ghostTrail != null) _ghostTrail.StartTrail(realm);

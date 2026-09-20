@@ -86,6 +86,8 @@ namespace EchoOfTheVoid.Player
         {
             if (_isAttacking) return false;
 
+            if (AudioManager.Instance != null) AudioManager.Instance.PlaySlash();
+
             if (_controller != null && !_controller.IsGrounded)
             {
                 StartCoroutine(ExecuteAirSlash());
@@ -107,6 +109,8 @@ namespace EchoOfTheVoid.Player
             {
                 return false;
             }
+
+            if (AudioManager.Instance != null) AudioManager.Instance.PlayResonance();
 
             StartCoroutine(ExecuteResonanceStrike());
             return true;
@@ -196,6 +200,7 @@ namespace EchoOfTheVoid.Player
                     DamageInfo info = new DamageInfo(damage, hit.transform.position, knockback, currentRealm, isResonance, gameObject);
                     HitFeedback feedback = damageable.TakeDamage(info);
 
+                    if (AudioManager.Instance != null) AudioManager.Instance.PlayHit();
                     OnEnemyHit?.Invoke(feedback.IsDeflected, feedback.DealtDamage);
 
                     // Restore +10 CE on hit

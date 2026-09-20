@@ -41,6 +41,7 @@ namespace EchoOfTheVoid.Core
             currentRealm = target;
             _lastSwitchTime = Time.time;
             RealityEventBus.TriggerRealmSwitch(currentRealm);
+            if (AudioManager.Instance != null) AudioManager.Instance.PlayRealityShift();
         }
 
         public void ToggleRealm()
