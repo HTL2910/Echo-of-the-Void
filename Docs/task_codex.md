@@ -1,5 +1,8 @@
 # TASK CHO CODEX (code: kẻ địch, boss, cơ chế môi trường)
 
+> **Trạng thái 2026-09-20:** K1, K2, K3, K4 đã bàn giao và **đã được Claude tích hợp** (xem `ban_giao/codex_K*.md`, mỗi bản có mục "Kết quả tích hợp" ghi các lỗi đã sửa). Còn K5–K9. Trước khi làm tiếp đọc `trang_thai_hien_tai.md` mục 7.
+> **Bài học từ lần tích hợp 1 (để không lặp lại):** (1) đừng gán `tag` chưa khai báo (script tạo prefab sẽ hỏng im lặng); (2) đừng khai báo interface mà không cài đủ thành viên (làm cả dự án không biên dịch, hãy chạy `Tools/run_tests_isolated.sh` **trước** khi commit); (3) boss/quái phải ở layer `Enemy` thì Kael mới đánh trúng; (4) cổng/khu vực khóa phải mở lại khi Kael chết (`BossEvents.Reset`); (5) sát thương liên tục phải theo nhịp, không `giây × deltaTime`; (6) nhớ trạng thái qua save bằng `GameSession`.
+
 Đọc trước: `ke_hoach_den_100.md` (**ai sở hữu thư mục nào**, khóa Unity, quy tắc tick), `echo_of_the_void_master_spec.md` (§3.1 ma trận thực tại, §3.4 chiến đấu, §5 kẻ địch và boss, §6 màn chơi), `phan_cong_code_va_noi_dung.md` (cấu trúc prefab, hợp đồng animator).
 
 ## Phạm vi của Codex
@@ -37,7 +40,7 @@
 
 ---
 
-## K1. Khung AI quái  (P1)
+## K1. Khung AI quái  (P1) - [x] ĐÃ TÍCH HỢP
 
 - `EnemyAnimationDriver` cho quái (giống `PlayerAnimationDriver`): tham số `Speed`, `IsGrounded`, `Realm`(int), trigger `Alert`, `Charge`, `Attack`, `Hurt`, `Die`; thiếu tham số/Animator thì bỏ qua. Ghi hợp đồng vào `phan_cong_code_va_noi_dung.md` mục 4 (thêm mục 4b "Animator quái") để Anti biết.
 - **Poise/choáng** trong `EnemyBase` (spec §5.2): thanh Poise từ `EnemyDataSO.PoiseMax`, giảm theo loại đòn, khi 0 thì gục N giây và nhận +50% sát thương.
@@ -48,7 +51,7 @@
 **Ghi chú:** Đã hoàn thành 100% K1 (EnemyAnimationDriver, Poise & Stun +50% dmg, EnemyRespawner, cập nhật ChronoCrawler & VoidWeaver tránh rơi mép). Test PlayMode `EnemyAITests` đạt 3/3, toàn bộ test suite đạt 50/50. Đã lập biên bản bàn giao tại `Docs/ban_giao/codex_K1.md`.
 
 
-## K2. Void Strider và Prism Sentry  (P1)
+## K2. Void Strider và Prism Sentry  (P1) - [x] ĐÃ TÍCH HỢP
 
 - **Void Strider** (`h_th_ng_c_ch_k_thu_t_v_gameplay.md` §3.1): tuần tra, phát hiện bán kính 6 tiles thì lao vào; hệ theo hào quang (xanh = Prime, tím = Echo); chỉ nhận đủ sát thương khi Kael ở đúng thế giới. Giá trị đề xuất trong spec §5.1 (HP 50, 12 sát thương, 4.0 → 6.5 tiles/s).
 - **Prism Sentry** (§3.2): đứng yên trần/tường, bắn tia mỗi 2.5 s (sát thương 20). Ở Prime tia gây sát thương; khi Kael chuyển sang Echo thì tia thành **cáp năng lượng** (`RailCable`: expose điểm đầu/cuối, hướng; **Claude** sẽ thêm trạng thái Rail Grind cho Kael, xin qua `yeu_cau_giua_agent.md`).
@@ -57,7 +60,7 @@
 **Xong khi:** test hành vi (phát hiện, lao, chuyển thế giới của tia), prefab tạo được, số liệu đọc từ SO.
 **Ghi chú:** Đã hoàn thành 100% K2 (VoidStrider: tuần tra/lao 6-tile/tránh mép; PrismSentry: tia beam 2.5s, Prime=damage/Echo=RailCable). Editor prefab builder tại `Assets/Editor/Codex/EnemyPrefabBuilder.cs`. Test `EnemyK2Tests` 6/6 đạt. Biên bản: `Docs/ban_giao/codex_K2.md`.
 
-## K3. Cơ chế môi trường Z1  (P1)
+## K3. Cơ chế môi trường Z1  (P1) - [x] ĐÃ TÍCH HỢP
 
 Trong `Assets/Scripts/Environment/Mechanics/`, mỗi cơ chế là prefab trong `Assets/Prefabs/Mechanics/` (root scale 1, sprite ở `Visual`):
 
@@ -70,7 +73,7 @@ Trong `Assets/Scripts/Environment/Mechanics/`, mỗi cơ chế là prefab trong 
 **Xong khi:** mỗi cơ chế có test (gai giết ở Prime/nảy ở Echo, cổng cho lướt qua, cửa đóng sau độ trễ...), prefab dùng được trong scene.
 **Ghi chú:** Đã hoàn thành 100% K3 (Spikes, BouncePad, EnergyGate, PressurePlate, Door, Lever trong `Assets/Scripts/Environment/Mechanics/`). Test `MechanicK3Tests` 7/7 đạt. Biên bản: `Docs/ban_giao/codex_K3.md`.
 
-## K4. Boss Sentinel-01 + đấu trường  (P1, quan trọng nhất)
+## K4. Boss Sentinel-01 + đấu trường  (P1, quan trọng nhất) - [x] ĐÃ TÍCH HỢP
 
 Theo `echo_of_the_void_master_spec.md` §5.2. HP 600, Poise 100. Thân trên hệ **Echo**, chân/xích hệ **Prime** (đánh phần nào thì phải đúng thế giới của phần đó).
 

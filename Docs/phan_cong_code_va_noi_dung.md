@@ -1,5 +1,7 @@
 # PHÂN CÔNG: CODE (Claude) và NỘI DUNG (Anti)
 
+> **Lưu ý (2026-09-20):** phân công ba bên (thêm Codex) và tiến độ hiện nằm ở `ke_hoach_den_100.md`; danh sách "Đầu việc" ở mục 5–6 dưới đây đã cũ, hãy xem `task_claude.md` / `task_codex.md` / `task_antigravity.md`. **Các mục còn hiệu lực:** hợp đồng Animator (mục 4), cấu trúc prefab (mục 4), quy ước tên, mục 7–8 (chạy Unity, lỗi đã gặp).
+
 Mục đích: hai bên cùng sửa project mà **không ghi đè nhau** (đã xảy ra: mất `using`, gắn trùng component). Đọc file này trước khi sửa bất cứ thứ gì. Spec game: `echo_of_the_void_master_spec.md`.
 
 ## 1. Ai sở hữu thư mục nào

@@ -99,3 +99,21 @@ Không có bàn giao thì Claude không tích hợp. Chỉ tick `[x]` trong file
 - [ ] `CREDITS.md` đủ nguồn và giấy phép; không có asset không rõ bản quyền.
 - [ ] Trang cửa hàng (itch.io/Steam): mô tả, ảnh chụp, trailer (Anti làm ảnh/trailer).
 - [ ] Bản Demo (Z1) đóng gói riêng.
+
+## 7. Bài học từ lần tích hợp 1 (các lỗi thật đã gặp, kiểm ngay khi nhận bàn giao)
+
+Mỗi lần nhận bàn giao hãy soát nhanh các điểm này trước khi chạy game:
+
+| Lỗi đã gặp | Cách phát hiện nhanh |
+|---|---|
+| Cả dự án không biên dịch vì code của người khác (interface không cài đủ) | `Tools/run_tests_isolated.sh`: dòng `LỖI BIÊN DỊCH` |
+| Script tạo prefab hỏng im lặng (gán tag chưa khai báo) → thư mục prefab trống | `ls Assets/Prefabs/<thư mục>` sau khi chạy generator; log có `[Codex] Created ...` |
+| Boss/quái ở layer sai nên Kael không đánh trúng | test "Kael đánh trúng boss" (đã có trong `IntegrationTests.cs`) |
+| Khu vực khóa không mở lại khi Kael chết (kẹt cổng) | test "chết giữa trận rồi đánh lại" |
+| Trạng thái không nhớ qua save (boss quay lại, vật nhặt xuất hiện lại) | test "boss đã hạ không quay lại", "vật nhặt không xuất hiện lại" |
+| Sát thương liên tục làm tròn về 0 | test đòn 0 sát thương; đọc code `dmgPerSec * deltaTime` |
+| Prefab có sẵn không nhận component mới | generator log `Added missing components to prefab ...` |
+| Báo xong nhưng file không tồn tại | `ls`/`find` đường dẫn trong bản bàn giao |
+| Hai agent chạy Unity cùng lúc (thoát mã 1, không có kết quả) | `ps aux | grep "[U]nity.app/Contents/MacOS/Unity"`; dùng bản sao để chạy test |
+
+**Test tích hợp** nằm ở `Assets/Tests/PlayMode/IntegrationTests.cs` (đấu trường boss + thanh máu + lưu, âm thanh, gai với hồi sinh), `MovementAbilityTests.cs` (kỹ năng), `SessionTests.cs`, `RoomTests.cs`, `MenuTests.cs`. Thêm test cùng kiểu cho mỗi thứ mới được nối.

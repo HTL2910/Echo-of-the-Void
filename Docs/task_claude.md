@@ -1,5 +1,7 @@
 # TASK CỦA CLAUDE (code lõi: người chơi, thế giới, lưu, UI, âm thanh)
 
+> **Trạng thái 2026-09-20:** xong: 3 API cho Codex, L2 (menu, cài đặt, gán phím), L3 (phòng/camera), L4 (Continue), L8 (Echo Anchor, Gravity Inversion), L9 (Rail Grind), tích hợp lần 1 (I1, I2). Đang dở `[~]`: L1 (TextMeshPro là tùy chọn), L6 (còn AudioMixer), I3–I5. **129/129 test đạt.** Chưa làm: L5, L7, L10–L16 (xem dưới) và `trang_thai_hien_tai.md` mục 5.
+
 Xem quy tắc chung và sở hữu thư mục ở `ke_hoach_den_100.md`. Tick `[x]` khi xong và đã có test đạt. `[~]` = đã viết, chưa chạy test.
 
 ## Cam kết với Codex (làm trước để không chặn Codex)

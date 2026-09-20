@@ -144,13 +144,17 @@ Ghi vào `Docs/yeu_cau_tu_anti.md`, mỗi dòng: `[ngày] cần gì | ở đâu 
 
 # GIAI ĐOẠN 2: LÊN 100% (Anti làm song song với Claude và Codex)
 
+> **Trạng thái 2026-09-20:** **B0 đã bàn giao và được Claude tích hợp** (Animator Kael/quái, nhạc Z1 2 stem + menu, 30 SFX riêng; xem `ban_giao/anti_B0.md`, mục "Kết quả tích hợp"). Anti cũng đã commit **bộ sprite HD mới** (Kael, quái, Sentinel-01, tileset Z1, HUD; commit `14e190a`, `3eb075e`) nhưng **chưa có bản bàn giao**. B1–B10 chưa có sản phẩm.
+> **Việc cần làm ngay:** (1) viết `Docs/ban_giao/anti_HD_sprites.md` nói rõ sprite mới đã gắn vào prefab/animation nào (hay chưa), tên clip/controller nếu đổi; (2) B1 dựng phòng Z1 (20% cả game).
+> **Nhắc lại quy tắc:** chỉ tick khi file có thật trên ổ đĩa; không sửa `.cs`; không đổi tên/di chuyển asset ngoài Unity Editor; chạy `python3 Tools/check_ownership.py --agent anti --working` trước khi commit.
+
 Xem `ke_hoach_den_100.md` (ai làm gì, thứ tự, tiêu chí 100%). Quy tắc chung ở đầu file này vẫn áp dụng. Thêm: chỉ tick khi **file có thật trên ổ đĩa** và mở được trong Unity; báo bằng danh sách đường dẫn.
 
-## B0. Bù chỗ còn thiếu của giai đoạn 1  (làm trước tiên)
+## B0. Bù chỗ còn thiếu của giai đoạn 1 - [x] ĐÃ TÍCH HỢP
 
-- [ ] `Assets/Prefabs/Player/Player.prefab`: thêm `Animator` vào `Visual`, gán `Kael.controller` (đúng tham số ở `phan_cong_code_va_noi_dung.md` mục 4). Claude sẽ kiểm bằng test.
-- [ ] `Assets/Audio/Music/MUS_Z1_Prime.ogg`, `MUS_Z1_Echo.ogg`, `MUS_Menu.ogg` và `Assets/Audio/SFX/Custom/*.ogg` (28 file như đã ghi): hiện **không có file nào** trong hai thư mục này. Tạo lại đúng đường dẫn; 2 stem phải **cùng BPM, cùng số mẫu**, loop khít.
-- [ ] Gắn Animator cho prefab quái (`Assets/Prefabs/Enemies/`), controller tự chạy vòng Idle/Walk (Claude/Codex chưa điều khiển tham số).
+- [x] `Assets/Prefabs/Player/Player.prefab`: thêm `Animator` vào `Visual`, gán `Kael.controller` (đúng tham số ở `phan_cong_code_va_noi_dung.md` mục 4). Claude sẽ kiểm bằng test.
+- [x] `Assets/Audio/Music/MUS_Z1_Prime.ogg`, `MUS_Z1_Echo.ogg`, `MUS_Menu.ogg` và `Assets/Audio/SFX/Custom/*.ogg` (28 file như đã ghi): hiện **không có file nào** trong hai thư mục này. Tạo lại đúng đường dẫn; 2 stem phải **cùng BPM, cùng số mẫu**, loop khít.
+- [x] Gắn Animator cho prefab quái (`Assets/Prefabs/Enemies/`), controller tự chạy vòng Idle/Walk (Claude/Codex chưa điều khiển tham số).
 **Ghi chú bàn giao B0:** Đã hoàn thành 100% asset của B0 (Player Animator & spritesheet 64 frame, 3 file nhạc và 28 file SFX custom, 4 Animation clips + 4 AnimatorControllers quái trong `Assets/Art/Animations/Enemies/` và gắn Animator vào child `Visual` của 4 prefab quái). Đã lập biên bản bàn giao tại `Docs/ban_giao/anti_B0.md` chờ Claude kiểm tra và tích hợp.
 
 

@@ -1,11 +1,13 @@
 # ECHO OF THE VOID — MASTER SPEC (v1.0)
 
+> **Trạng thái triển khai và cách làm tiếp: xem `trang_thai_hien_tai.md`.** File này là *đích* (thiết kế); trạng thái thực tế nằm ở đó và ở `ke_hoach_den_100.md`.
+
 Tài liệu đặc tả tổng hợp, **nguồn sự thật duy nhất (SSOT)**. Hợp nhất 10 tài liệu trong `Docs/` và đã giải quyết các mâu thuẫn giữa chúng (xem §0.2). Khi tài liệu cũ và file này khác nhau, **file này thắng**.
 
 - Engine: Unity `6000.3.13f1`, URP 2D, Input System 1.19, Cinemachine 3.1.7
 - Thể loại: 2D Metroidvania / Platformer, pixel art, đơn người chơi
 - Nền tảng: PC (Windows/macOS) trước; tay cầm là bắt buộc. Mobile không nằm trong phạm vi.
-- Trạng thái repo hiện tại: có greybox (`Prototype_Level1`), `RealityManager`, `RealityEventBus`, `RealityPlatform`, `PlayerController` (chưa FSM), tileset Kenney. Chi tiết ở §13.
+- Trạng thái repo: xem `trang_thai_hien_tai.md` (đã có controller FSM, combat, quái, boss Sentinel-01, kỹ năng, lưu, menu, phòng/camera; **chưa có các phòng thật**).
 
 ---
 
@@ -36,6 +38,22 @@ Tài liệu đặc tả tổng hợp, **nguồn sự thật duy nhất (SSOT)**.
 | D9 | Gai "chết ngay" vs HP không tự hồi | **Hazard tức thì = respawn nhẹ** (về ô an toàn cuối, HP giữ nguyên). **Hết HP = chết thật** (về Trạm Chrono) | Tránh trừng phạt quá nặng khi thử bẫy |
 | D10 | Phím `E` vừa Shift vừa (ngầm) Interact | Shift = `Left Shift`/`RB`. Interact = `E`/`Y` | Tránh trùng phím |
 | D11 | Orbitron thiếu dấu tiếng Việt | Orbitron: **tiêu đề, HUD, số, tên riêng tiếng Anh**. Space Mono: mọi đoạn văn/đối thoại | Đã kiểm tra cmap: Orbitron thiếu 51/57 ký tự tiếng Việt, Space Mono đủ |
+
+### 0.2b. Quyết định đã chốt trong lúc triển khai (D12–D22)
+
+| # | Quyết định | Lý do / nơi cài |
+|---|---|---|
+| D12 | **Hồi sinh mềm** (gai, hố) đưa Kael về ô đứng vững **cách đó ~0.4 s**, không phải ô cuối cùng | Ô cuối nằm sát gai: người chơi còn giữ phím chạy sẽ chết lại ngay. `PlayerRespawn` |
+| D13 | Wall Jump: bật ngang 11, dọc 16, **khóa input ngang 0.12 s** | Không khóa thì đà bị triệt trong 0.09 s, Kael chỉ rời tường ~0.7 tile |
+| D14 | Đòn **0 sát thương bị bỏ qua**; Assist (x0.75/x0.5) làm tròn nhưng tối thiểu 1 | Tránh "1 sát thương mỗi khung hình" từ đòn liên tục |
+| D15 | Đòn liên tục của boss (laser) gây sát thương **theo nhịp 0.25 s**, không theo khung hình | `dmg/s x deltaTime` làm tròn về 0 |
+| D16 | **Echo Anchor:** 25 CE, một bóng, sống 8 s, bấm lần hai để đổi chỗ (miễn phí), từ chối nếu bóng nằm trong vật đặc, bóng ở layer `Anchor` (index 15) | `EchoAnchor` |
+| D17 | **Gravity Inversion:** chỉ trong `GravitonField`, cần Graviton Core; rời vùng thì trả lại sau **1 s** kèm cảnh báo | `PlayerController`, `GravitonField` |
+| D18 | **Rail Grind:** bám cáp `RailCable` đang bật khi ở trên không (không bám khi đang bay lên nhanh), tốc độ tối thiểu 10, nhảy để bật ra, dash để hủy, không bám lại trong 0.4 s | `PlayerRailGrindState` |
+| D19 | **Chặn Shift:** chỉ khi bệ của thế giới đích *chồng* lên Kael; chạm mép thì cho. Bị chặn không tốn cooldown | `RealityObstacles` |
+| D20 | **Chuyển phòng:** camera cắt thẳng sang phòng mới, flash 0.15 s, khóa input 0.1 s; phòng nhỏ hơn khung nhìn thì căn giữa | `RoomManager`, `CameraFollow2D` |
+| D21 | Cài đặt áp dụng thật: âm lượng, rung màn hình (0–1), giảm nhấp nháy (flash ≤ 25%), bỏ hitstop, Assist sát thương/coyote/bất tử; hitstop **không được bỏ tạm dừng** | `SettingsService`, `GameFlow.IsPaused` |
+| D22 | **Màn thử (sandbox) không phải thiết kế cuối:** Piston Boots nhặt sớm, Echo Anchor nhặt gần đầu màn, phần thưởng Sentinel-01 là `Graviton Core (test)`. Ở Z1 thật Piston Boots là phần thưởng của Sentinel-01 (§4) | Để thử mọi kỹ năng trong một màn |
 
 ### 0.3. Giá trị do spec này đề xuất (KHÔNG có trong 10 tài liệu gốc)
 
@@ -71,8 +89,8 @@ Các mục sau là **đề xuất mới để lấp chỗ trống**, cần bạn
 
 ### 2.1. Render & Camera
 - URP 2D Renderer, **Pixel Perfect Camera** (ref 480×270, PPU 16), filter Point, không nén texture, không mipmap (đã có `PixelArtPostprocessor`).
-- Cinemachine 3: 1 virtual camera / phòng, `CinemachineConfiner2D` theo `RoomBounds`, look-ahead nhẹ theo hướng chạy, damping tắt theo trục Y khi đứng trên đất.
-- Chuyển phòng: trigger biên → fade 0.15 s ra/vào, đóng băng input 0.1 s.
+- **Đã cài (không dùng Cinemachine):** `CameraFollow2D` (look-ahead, làm mượt, rung camera cộng lên trên mà không cộng dồn) + `RoomManager`/`RoomBounds` giới hạn camera theo từng phòng. Cinemachine vẫn có trong project nhưng không được dùng (đã từng xung đột với camera tự viết).
+- Chuyển phòng: `RoomManager` phát hiện Kael sang phòng khác → cắt camera, flash 0.15 s, đóng băng input 0.1 s (đã cài).
 - Post-process: 2 URP Volume profile (Prime/Echo), blend **0.18 s** khi Shift (§7).
 
 ### 2.2. Physics 2D & Layers
@@ -95,7 +113,7 @@ Các mục sau là **đề xuất mới để lấp chỗ trống**, cần bạn
 - Tick vật lý: Fixed Timestep = `1/60`.
 
 ### 2.3. Input
-- Dùng **Input System** qua asset `InputSystem_Actions` (hiện code đọc `Keyboard.current` trực tiếp → phải đổi). Hỗ trợ rebind, lưu binding vào file settings.
+- **Đã cài** bằng lớp trừu tượng riêng thay cho `InputSystem_Actions`: `IPlayerInput` (một khung ý định mỗi frame) → `DevicePlayerInput` (bàn phím + tay cầm) đọc phím theo `InputBindings` (gán được, lưu JSON trong `settings.json`). Test dùng input giả nên không phụ thuộc thiết bị. Màn gán phím trong menu Cài đặt: phím 1/phím 2 + nút tay cầm cho mỗi hành động, trùng thì đổi chỗ, `Esc` hủy, có nút reset.
 - Bảng phím mặc định:
 
 | Hành động | Bàn phím | Tay cầm (Xbox layout) |
@@ -109,8 +127,8 @@ Các mục sau là **đề xuất mới để lấp chỗ trống**, cần bạn
 | Resonance Strike | `U` | RT |
 | Gravity Flip | `Q` | LT |
 | Tương tác | `E` | Y |
-| Bản đồ | `M` | Select/View |
-| Tạm dừng | `Esc` | Start |
+| Bản đồ | `M` | Select/View *(chưa cài)* |
+| Tạm dừng | `Esc` | Start *(không gán lại được)* |
 
 - Deadzone stick 0.15. Hỗ trợ Xbox, PlayStation, Switch Pro (icon đổi theo thiết bị, dùng Input Prompts Pixel).
 
@@ -216,12 +234,12 @@ Nguyên văn thông số từ `game_feel_v_feedback_k_thu_t.md` được giữ n
 Squash giữ thể tích: `scaleX × scaleY = 1`. Ghost trail: 5 bóng, mỗi 0.03 s, alpha 0.7→0, xanh lam-lục (Prime) / tím neon (Echo).
 Hitstop chạy trên `unscaledTime`; UI không bị ảnh hưởng.
 
-### 3.5b. Save/Load & Checkpoint
-- **Trạm Chrono (Save Point):** tương tác `E` → lưu, +25 HP, đầy CE, quái thường hồi lại. Đây cũng là điểm dịch chuyển nhanh sau khi mở khóa.
-- 3 slot lưu, JSON tại `Application.persistentDataPath`, có trường `version` để migrate.
-- Auto-save: khi qua trạm, sau boss, khi nhặt vật phẩm vĩnh viễn.
-- Dữ liệu: `slotId, playtime, zoneId, stationId, abilityFlags, maxHP, collectedIds[], bossDefeated[], monolithsRead[], mapExplored[], endingFlags`. Settings lưu riêng (không nằm trong slot).
-- Mọi vật thể lưu trạng thái phải có `PersistentId` (GUID ổn định, sinh ở editor).
+### 3.5b. Save/Load & Checkpoint (đã cài)
+- **Trạm Chrono:** vào vùng trạm rồi `E`/Y → +25 HP, đầy CE, đặt điểm hồi sinh, **ghi file lưu**, quái thường hồi lại (`ChronoStation.AnyStationUsed`).
+- **3 slot** JSON tại `Application.persistentDataPath/save_slot{n}.json`, có `version`; ghi qua file tạm rồi đổi tên (crash giữa chừng không hỏng save cũ). File hỏng hoặc từ bản game mới hơn bị từ chối, không làm game sập. Menu hiện dùng **slot 0** (chưa có giao diện chọn slot).
+- `GameSession` giữ save đang chơi (`Current`): New Game tạo save trống, Continue nạp file, `SaveBootstrap` đặt Kael đúng trạm, thế giới, máu, kỹ năng khi vào màn.
+- Dữ liệu (`SaveData`): `slotId, playtimeSeconds, sceneName, checkpointId/X/Y/Realm, maxHealth, currentHealth, abilityFlags (bitmask AbilityFlags), collectedIds[], bossDefeated[], visitedRooms[]`. Còn thiếu: `monolithsRead[]`, `endingFlags` (khi làm Monolith và kết thúc). Cài đặt lưu riêng (`SettingsData`).
+- Vật cần nhớ trạng thái có `PersistentId` (GUID sinh ở editor, hoặc id cố định do generator đặt). Vật nhặt đã lấy và boss đã hạ không xuất hiện lại.
 
 ---
 
@@ -535,10 +553,26 @@ Namespace `EchoOfTheVoid.<Module>`. Chia asmdef: `Core`, `Gameplay`, `UI`, `Edit
 - Chỉ `MonoBehaviour` ở rìa; logic tính toán (`AffinityCalculator`, `DamageCalculator`) là class thuần C# để test.
 - Xóa mọi subscribe ở `OnDisable`/`OnDestroy` (đã đúng trong `RealityPlatform`).
 
-### 12.3. Việc lệch giữa code hiện tại và spec
+### 12.3. Đã xử lý và còn lệch so với spec
 
-| Hiện trạng | Cần làm |
+| Hạng mục | Trạng thái |
 |---|---|
+| Controller theo FSM (§3.2) | ✅ Idle/Run/Jump/Fall/WallSlide/Dash/Attack/RailGrind |
+| Input tách khỏi controller, gán lại được | ✅ `IPlayerInput` / `InputBindings`. Chưa dùng asset `InputSystem_Actions` (không cần) |
+| Dash 20, cooldown 0.8 s, reset khi chém trúng | ✅ |
+| Ground mask theo layer, layer riêng (`Neutral`…`Anchor`) | ✅ |
+| Chặn Shift khi bị kẹt | ✅. Còn: đổi va chạm bằng `IgnoreLayerCollision` thay vì bật/tắt collider (làm cùng lúc dựng tilemap) |
+| Combat, quái, poise, respawn quái | ✅ (Codex K1) |
+| HUD: máu/CE/dash, icon kỹ năng, thanh máu boss | ✅ dùng UGUI `Text`. Còn: TextMeshPro, HUD "diegetic" (áo choàng/găng), viền màn hình theo thế giới |
+| Menu chính, tạm dừng, cài đặt, gán phím, Continue | ✅ (chọn slot: chưa) |
+| Bản đồ, dịch chuyển nhanh | ❌ chưa |
+| Hội thoại Iris, Monolith, cutscene, 3 kết thúc, credits | ❌ chưa (chờ văn bản của Anti) |
+| AudioMixer + snapshot Prime/Echo/LowHP (LPF 800 Hz) | ❌ chưa (đã có SFX theo nhóm, nhịp tim, nhạc 2 stem) |
+| Mù màu (palette), assist "tự nhảy" | ❌ chưa (có: giảm nhấp nháy, rung, hitstop, sát thương, coyote, bất tử) |
+| Pooling VFX/đạn, hiệu năng | ❌ chưa |
+| Boss 2 hệ (thân trên Echo, chân xích Prime) | ❌ chưa (cần prefab 2 phần) |
+
+---|---|
 | `PlayerController` đơn khối, không FSM | Tách state theo §3.2 |
 | Đọc phím trực tiếp (`Keyboard.current`), `E` cũng là Shift | Dùng `InputSystem_Actions` + đổi theo D10 |
 | `dashSpeed = 24` | 20 (D4); thêm cooldown 0.8 s + reset khi chém trúng |
@@ -556,15 +590,15 @@ Theo `l_tr_nh_ph_t_tri_n_to_n_di_n.md`, thêm tiêu chí kiểm tra:
 
 | Mốc | Nội dung | Tiêu chí hoàn thành (DoD) | Hiện tại |
 |---|---|---|---|
-| **M1 Greybox** | Bước 1–2: controller, jump, coyote, buffer | Nhảy đúng 3.5 tiles ±0.1, thời gian đỉnh 0.35 s ±0.03 (test tự động EditMode/PlayMode) | Có 1 phần |
-| **M2 Reality Shift** | Bước 3 | Shift trong 1 frame; chặn Shift khi đè; shader/LUT đổi tức thì; 3 phòng thử nghiệm | Có 1 phần |
-| **M3 Core loop** | Bước 4 + combat cơ bản | Combo 3 đòn, Health/Hitbox, Crawler + Strider; playtest nội bộ 10 phút không lỗi | Chưa |
-| **M4 Vertical Slice (Z1)** | Bước 5–8: art, level 1-1, Sentinel-01, audio | 18 phòng chơi được từ đầu tới boss; hết audio/VFX cốt lõi; save/load; 60 FPS | Chưa |
-| **M5 Full Production** | Bước 9–10: Z2–Core, UI, narrative, save đủ | Toàn bộ 5 khu chơi được; 3 kết thúc; rebind hoạt động | Chưa |
+| **M1 Greybox** | Bước 1–2: controller, jump, coyote, buffer | Nhảy đúng 3.5 tiles ±0.1, thời gian đỉnh 0.35 s ±0.03 (test tự động EditMode/PlayMode) | Xong (có test tự động) |
+| **M2 Reality Shift** | Bước 3 | Shift trong 1 frame; chặn Shift khi đè; shader/LUT đổi tức thì; 3 phòng thử nghiệm | Gần xong (thiếu tint toàn cảnh, viền màn hình, đổi bằng layer) |
+| **M3 Core loop** | Bước 4 + combat cơ bản | Combo 3 đòn, Health/Hitbox, Crawler + Strider; playtest nội bộ 10 phút không lỗi | Xong về code (chưa playtest bằng tay) |
+| **M4 Vertical Slice (Z1)** | Bước 5–8: art, level 1-1, Sentinel-01, audio | 18 phòng chơi được từ đầu tới boss; hết audio/VFX cốt lõi; save/load; 60 FPS | ~62%: thiếu 18 phòng, sprite/prefab HD chưa nối, nhạc/vòng chơi hoàn chỉnh |
+| **M5 Full Production** | Bước 9–10: Z2–Core, UI, narrative, save đủ | Toàn bộ 5 khu chơi được; 3 kết thúc; rebind hoạt động | ~5% |
 | **M6 Polish** | Bước 11–12 | Không lỗi chặn tiến trình; 3 tay cầm đã test; hiệu năng đạt §2.4 | Chưa |
 | **M7 Launch** | Bước 13 | Demo Z1 lên itch.io/Steam; trang store; bản build cho macOS + Windows | Chưa |
 
-**Quy tắc cổng:** không bắt đầu M4 nếu chưa qua playtest M3 (game feel đạt).
+**Quy tắc cổng:** không bắt đầu M4 nếu chưa qua playtest M3 (game feel đạt). *Ghi chú: M4 đã bắt đầu song song vì có 3 người làm; playtest M3 bằng tay vẫn còn nợ.*
 
 ### QA
 - **Test tự động (PlayMode/EditMode):** thông số nhảy/dash, `AffinityCalculator`, `DamageCalculator`, save/load round-trip, trình tự mở khóa năng lực, chặn Shift.
@@ -577,9 +611,9 @@ Theo `l_tr_nh_ph_t_tri_n_to_n_di_n.md`, thêm tiêu chí kiểm tra:
 
 | # | Vấn đề | Đề xuất mặc định | Cần quyết định trước |
 |---|---|---|---|
-| Q1 | **Nguồn nhạc** 2 stem/khu | Nhạc tự làm/thuê hoặc tạo bằng công cụ AI (kiểm tra bản quyền) | M4 |
-| Q2 | **Sprite Kael + quái/boss** riêng | Placeholder Kenney tới hết M3; tìm pack/thuê từ M4 | M4 |
-| Q3 | Ngôn ngữ phát hành | Tiếng Anh gốc + tiếng Việt (localization ngay từ đầu, §9.7) | Trước M4 |
+| Q1 | **Nguồn nhạc** 2 stem/khu | **Đã giải quyết cho Z1:** Anti tạo `MUS_Z1_Prime/Echo` (110 BPM) + menu. Còn Z2–Z4, Core, boss, kết | M4/M5 |
+| Q2 | **Sprite Kael + quái/boss** riêng | **Đang giải quyết:** Anti đã làm Kael (64 frame) và bộ HD mới (Kael, quái, Sentinel-01); còn nối vào prefab, boss còn lại | M4 |
+| Q3 | Ngôn ngữ phát hành | Tiếng Anh gốc + tiếng Việt. **Chưa có hệ localization** (chuỗi đang nằm trong code); `SettingsData.language` đã có chỗ. Cần quyết trước khi có hội thoại/Monolith | Trước hội thoại |
 | Q4 | Checkpoint giữa các phase của Chronos | Có, ở đầu Phase 3 | M5 |
 | Q5 | Số liệu Myra, Doppelganger, Rift Knight Prime | Lấy §5.3 làm giá trị khởi đầu | M5 |
 | Q6 | Kích thước trạm dịch chuyển nhanh | Bật sau khi qua boss Z2 | M5 |
