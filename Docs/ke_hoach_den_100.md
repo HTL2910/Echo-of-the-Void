@@ -45,31 +45,31 @@ Tiến độ dưới đây là **ước lượng theo khối lượng công vi�
 |---|---|---:|---:|---|
 | C1 | Người chơi: di chuyển, nhảy, dash, tường | 4 | 95% | Claude |
 | C2 | Hệ Reality: bệ/tilemap, chặn Shift, layer, tint toàn cảnh, viền màn hình | 3 | 65% | Claude |
-| C3 | Khung chiến đấu + AI quái | 4 | 65% | Codex |
-| C4 | Quái: Strider, Sentry, Rift Knight, hoàn thiện Crawler/Weaver | 4 | 25% | Codex |
-| C5 | 5 boss (Sentinel-01, Myra, Doppelganger, Rift Knight Prime, Chronos 3 giai đoạn) | 8 | 0% | Codex |
-| C6 | Cơ chế: gai/đệm nảy, cổng năng lượng, công tắc/cửa, bánh răng/con lắc, rail grind, axit, gió | 5 | 25% | Codex |
-| C6b | Kỹ năng: Echo Anchor, Gravity Inversion (Resonance đã có) | 3 | 0% | Claude |
-| C7 | Lưu/nạp, slot, Continue, cài đặt | 2 | 50% | Claude |
-| C8 | UI: HUD TMP, menu chính, tạm dừng, cài đặt, rebind, bản đồ, màn kết | 5 | 20% | Claude |
-| C9 | Hệ âm thanh: mixer, snapshot Prime/Echo/LowHP, footstep, SFX registry | 2 | 30% | Claude |
-| C10 | Hạ tầng phòng: chuyển phòng, camera confiner, PersistentId, dịch chuyển nhanh | 3 | 5% | Claude |
+| C3 | Khung chiến đấu + AI quái | 4 | 85% | Codex |
+| C4 | Quái: Strider, Sentry, Rift Knight, hoàn thiện Crawler/Weaver | 4 | 65% | Codex |
+| C5 | 5 boss (Sentinel-01, Myra, Doppelganger, Rift Knight Prime, Chronos 3 giai đoạn) | 8 | 20% | Codex |
+| C6 | Cơ chế: gai/đệm nảy, cổng năng lượng, công tắc/cửa, bánh răng/con lắc, rail grind, axit, gió | 5 | 55% | Codex |
+| C6b | Kỹ năng: Echo Anchor, Gravity Inversion (Resonance đã có) | 3 | 90% | Claude |
+| C7 | Lưu/nạp, slot, Continue, cài đặt | 2 | 75% | Claude |
+| C8 | UI: HUD TMP, menu chính, tạm dừng, cài đặt, rebind, bản đồ, màn kết | 5 | 55% | Claude |
+| C9 | Hệ âm thanh: mixer, snapshot Prime/Echo/LowHP, footstep, SFX registry | 2 | 55% | Claude |
+| C10 | Hạ tầng phòng: chuyển phòng, camera confiner, PersistentId, dịch chuyển nhanh | 3 | 45% | Claude |
 | C11 | Cốt truyện trong game: hội thoại Iris, Monolith, cutscene, 3 kết thúc | 3 | 0% | Claude |
-| C12 | Tiếp cận + tối ưu: assist mode, mù màu, giảm nhấp nháy, pooling | 2 | 0% | Claude |
-| C13 | Test tự động, build macOS/Windows | 2 | 40% | Claude + Codex |
-| A1 | Nghệ thuật Kael | 3 | 60% | Anti |
-| A2 | Nghệ thuật quái (7 loại + biến thể Prime/Echo) | 3 | 35% | Anti |
+| C12 | Tiếp cận + tối ưu: assist mode, mù màu, giảm nhấp nháy, pooling | 2 | 35% | Claude |
+| C13 | Test tự động, build macOS/Windows | 2 | 75% | Claude + Codex |
+| A1 | Nghệ thuật Kael | 3 | 85% | Anti |
+| A2 | Nghệ thuật quái (7 loại + biến thể Prime/Echo) | 3 | 50% | Anti |
 | A3 | Nghệ thuật boss ×5 | 5 | 0% | Anti |
 | A4 | Tileset + nền 5 khu | 5 | 20% | Anti |
 | A5 | **Dựng phòng** (Z1 18, Z2 24, Z3 24, Z4 24, Core 3) | 20 | 1% | Anti |
 | A6 | VFX | 2 | 70% | Anti |
 | A7 | Nghệ thuật UI: logo, menu, HUD, bản đồ, cutscene | 3 | 20% | Anti |
-| A8 | Nhạc (Z1–Z4, Core, boss, menu, kết) + SFX riêng | 7 | 5% | Anti |
+| A8 | Nhạc (Z1–Z4, Core, boss, menu, kết) + SFX riêng | 7 | 25% | Anti |
 | A9 | Văn bản: đối thoại, 12 Monolith, kết thúc | 3 | 0% | Anti |
 | A10 | Nền parallax, ánh sáng môi trường | 2 | 0% | Anti |
-| | **Tổng** | **100** | **≈ 19%** | |
+| | **Tổng** (trọng số cộng lại 103, đã quy về 100) | **100** | **≈ 36%** | |
 
-(Con số 12–14% ở lần trước là ước lượng thô hơn; bảng này chi tiết hơn nên ra ~19%.)
+(Sau đợt hợp nhất lần 1: ~19% → ~34%. **Demo Z1 ~62%**: còn dựng 18 phòng, boss có sprite thật, nhạc/vòng chơi hoàn chỉnh.)
 
 **Phần khó nhất** là A5 (dựng 90 phòng, 20%) và C5 (5 boss, 8%): đặt ưu tiên sớm.
 

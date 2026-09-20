@@ -36,4 +36,9 @@
 
 ## Trạng thái tích hợp
 
-- [ ] ✔ tích hợp (chờ Claude)
+- [x] ✔ tích hợp (Claude)
+
+## ✔ Kết quả tích hợp (Claude, 2026-09-20)
+- **Lỗi biên dịch đã sửa** (cả dự án không build được): `Spikes` khai báo `IRealityObstacle` nhưng không cài `SolidInRealm`/`Overlaps`. Gai là hazard, không phải vật cản đặc, nên đã bỏ interface. Sửa thêm 2 lỗi hành vi cùng file: (1) trạng thái ban đầu không đọc thế giới hiện tại (sai khi Continue vào Echo); (2) Kael đứng sẵn trên gai khi thế giới đổi sang Prime không bị tính (thêm `OnTriggerStay2D`).
+- Tích hợp: Gai/Đệm nảy/Cổng năng lượng đã đặt vào màn thử; `PressurePlate`, `Door`, `Lever` có prefab `Assets/Prefabs/Mechanics/Mech_*.prefab` cho Anti dựng phòng. Test tích hợp: gai ở Prime hồi sinh mềm không mất máu, ở Echo bật Kael lên.
+- Lưu ý thiết kế cho Codex: `EnergyGate` là **trigger** nên chỉ gây sát thương 10 khi chạm (không chặn vật lý). Nếu muốn "chặn hẳn trừ khi lướt", cần collider đặc riêng.

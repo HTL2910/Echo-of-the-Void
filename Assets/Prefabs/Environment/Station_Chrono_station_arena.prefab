@@ -271,4 +271,3 @@ MonoBehaviour:
   stationId: station_arena
   healAmount: 25
   respawnHeight: 0.9
-  saveSlot: 0

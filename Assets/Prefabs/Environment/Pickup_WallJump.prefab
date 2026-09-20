@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7919502623269490199}
   - component: {fileID: 3672706149427122185}
+  - component: {fileID: 7477125391239011370}
   - component: {fileID: 7531703487751546715}
   m_Layer: 12
   m_Name: Pickup_WallJump
@@ -71,6 +72,19 @@ CircleCollider2D:
   m_CompositeOrder: 0
   m_Offset: {x: 0, y: 0}
   m_Radius: 0.8
+--- !u!114 &7477125391239011370
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3113414259548168583}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0fc888a62f5b4092b5157ad9cf79760, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: EchoOfTheVoid.Runtime::EchoOfTheVoid.Core.PersistentId
+  id: pickup_walljump
 --- !u!114 &7531703487751546715
 MonoBehaviour:
   m_ObjectHideFlags: 0

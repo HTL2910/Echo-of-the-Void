@@ -180,7 +180,6 @@ MonoBehaviour:
   stationId: station_start
   healAmount: 25
   respawnHeight: 0.9
-  saveSlot: 0
 --- !u!1 &7104073767687453119
 GameObject:
   m_ObjectHideFlags: 0

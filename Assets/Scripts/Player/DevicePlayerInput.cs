@@ -34,6 +34,8 @@ namespace EchoOfTheVoid.Player
                 f.DashPressed |= Pressed(kb, bindings.GetKeys(PlayerAction.Dash));
                 f.ResonancePressed |= Pressed(kb, bindings.GetKeys(PlayerAction.Resonance));
                 f.InteractPressed |= Pressed(kb, bindings.GetKeys(PlayerAction.Interact));
+                f.AnchorPressed |= Pressed(kb, bindings.GetKeys(PlayerAction.Anchor));
+                f.GravityPressed |= Pressed(kb, bindings.GetKeys(PlayerAction.Gravity));
             }
 
             var pad = Gamepad.current;
@@ -49,6 +51,8 @@ namespace EchoOfTheVoid.Player
                 f.DashPressed |= PadPressed(pad, bindings, PlayerAction.Dash);
                 f.ResonancePressed |= PadPressed(pad, bindings, PlayerAction.Resonance);
                 f.InteractPressed |= PadPressed(pad, bindings, PlayerAction.Interact);
+                f.AnchorPressed |= PadPressed(pad, bindings, PlayerAction.Anchor);
+                f.GravityPressed |= PadPressed(pad, bindings, PlayerAction.Gravity);
             }
 #else
             f.Move = Input.GetAxisRaw("Horizontal");
@@ -59,6 +63,8 @@ namespace EchoOfTheVoid.Player
             f.DashPressed = Input.GetKeyDown(KeyCode.K) || Input.GetKeyDown(KeyCode.LeftControl);
             f.ResonancePressed = Input.GetKeyDown(KeyCode.U) || Input.GetKeyDown(KeyCode.L);
             f.InteractPressed = Input.GetKeyDown(KeyCode.E);
+            f.AnchorPressed = Input.GetKeyDown(KeyCode.F);
+            f.GravityPressed = Input.GetKeyDown(KeyCode.Q);
 #endif
             f.Move = Mathf.Clamp(f.Move, -1f, 1f);
             return f;

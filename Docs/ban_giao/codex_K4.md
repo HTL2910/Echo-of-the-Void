@@ -39,4 +39,15 @@
 
 ## Trạng thái tích hợp
 
-- [ ] ✔ tích hợp (chờ Claude)
+- [x] ✔ tích hợp (Claude)
+
+## ✔ Kết quả tích hợp (Claude, 2026-09-20)
+- Đã đặt **đấu trường Sentinel-01** vào màn thử (x 44..78, sau Trạm `station_boss`), có cổng khóa, thanh máu boss (HUD), phần thưởng và trạm sau trận.
+- **Lỗi đã sửa khi tích hợp:**
+  1. Prefab boss ở layer `Default` nên **Kael không thể đánh trúng** (đòn của Kael chỉ chạm layer `Enemy`). Sửa trong `BossPrefabBuilder`.
+  2. `BossArena` **kẹt cổng**: Kael chết giữa trận thì boss reset nhưng cổng vẫn khóa và trận không bắt đầu lại được. Nay nghe `BossEvents.Reset` để mở cổng và cho đánh lại.
+  3. `BossArena` không nhớ boss đã hạ: nay ghi `GameSession.MarkBossDefeated`; nạp lại thì boss biến mất, cổng mở, có trạm. Thêm `Configure(...)` và `BossBase.BossId`.
+  4. Laser `LaserSweep` gây `dmgPerSec * deltaTime` mỗi khung hình (làm tròn về 0, chỉ nháy bất tử). Nay gây sát thương theo nhịp 0.25 s. `PlayerStats` bỏ qua đòn 0 sát thương.
+  5. Boss thiếu tham chiếu `laserOrigin`, `missileSpawnPoint`, `missileWarningPrefab`: generator nay gắn (kèm prefab `Fx_MissileWarning` tự hủy).
+- **Chưa làm ở boss:** phần thân trên (Echo) / chân xích (Prime) tách hai hệ (cần prefab 2 phần khi Anti có sprite); phần thưởng trong màn thử là `Graviton Core (test)` để không trùng Piston Boots nhặt đầu màn.
+- Test tích hợp đạt: vào đấu trường, thanh máu, Kael đánh trúng boss, hạ boss (thưởng + trạm + lưu), chết giữa trận rồi đánh lại, boss đã hạ không quay lại.

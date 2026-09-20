@@ -185,6 +185,7 @@ namespace EchoOfTheVoid.Editor
             playerObj.AddComponent<PlayerRespawn>();
             playerObj.AddComponent<PlayerAnimationDriver>();
             playerObj.AddComponent<AbilitySet>();
+            playerObj.AddComponent<EchoAnchor>();
             var combat = playerObj.AddComponent<PlayerCombat>();
             combat.SetSlashSprite(slashSprite);
             combat.SetEnemyLayer(1 << enemyLayer);
@@ -195,7 +196,7 @@ namespace EchoOfTheVoid.Editor
 
             // Player becomes a prefab (reused on later runs so artist edits survive)
             playerObj = SaveOrReusePrefab(playerObj, "Player", "Player",
-                typeof(PlayerAnimationDriver), typeof(AbilitySet));
+                typeof(PlayerAnimationDriver), typeof(AbilitySet), typeof(EchoAnchor));
 
             // Wire camera target directly
             camFollow.SetTarget(playerObj.transform);
@@ -291,7 +292,7 @@ namespace EchoOfTheVoid.Editor
             AssetDatabase.Refresh();
 
             PlacePrefab("Assets/Prefabs/Enemies/VoidStrider.prefab", combatRoot.transform, "Strider_Prime", new Vector3(31f, -0.9f, 0f));
-            PlacePrefab("Assets/Prefabs/Enemies/PrismSentry.prefab", combatRoot.transform, "Sentry_Prime", new Vector3(29f, 7f, 0f));
+            PlacePrefab("Assets/Prefabs/Enemies/PrismSentry.prefab", combatRoot.transform, "Sentry_Prime", new Vector3(35f, 7f, 0f));
 
             int hazardLayer = GetOrCreateLayer("Hazard", 11);
             var mechanicsRoot = new GameObject("Mechanics").transform;
@@ -304,6 +305,26 @@ namespace EchoOfTheVoid.Editor
             BuildMechanic<PressurePlate>(mechanicsRoot, "PressurePlate", Vector3.zero, new Vector2(1.5f, 0.2f), new Color(1f, 0.85f, 0.2f, 1f), boxSprite, neutralLayer, true, false);
             BuildMechanic<Door>(mechanicsRoot, "Door", Vector3.zero, new Vector2(0.8f, 4f), new Color(0.5f, 0.55f, 0.65f, 1f), boxSprite, neutralLayer, false, false);
             BuildMechanic<Lever>(mechanicsRoot, "Lever", Vector3.zero, new Vector2(0.8f, 1f), new Color(0.9f, 0.9f, 0.4f, 1f), boxSprite, GetOrCreateLayer("Interactable", 12), true, false);
+
+
+            // Gravity Inversion demo: a ceiling above a Graviton Field (needs the Graviton Core from the boss)
+            CreatePlatform(levelRoot.transform, "Ceiling_Demo", new Vector3(29f, 9f, 0f), new Vector3(7f, 1f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
+            var fieldGo = new GameObject("GravitonField_Demo");
+            fieldGo.transform.position = new Vector3(29f, 3.5f, 0f);
+            var fieldBox = fieldGo.AddComponent<BoxCollider2D>();
+            fieldBox.isTrigger = true;
+            fieldBox.size = new Vector2(6f, 10f);
+            var fieldVisual = AddVisual(fieldGo, boxSprite, new Vector2(6f, 10f), new Color(0.6f, 0.25f, 1f, 0.18f));
+            fieldVisual.sortingOrder = -2;
+            fieldGo.AddComponent<GravitonField>();
+            var fieldInstance = SaveOrReusePrefab(fieldGo, "Mech_GravitonField", "Mechanics");
+            fieldInstance.transform.SetParent(mechanicsRoot, true);
+            fieldInstance.transform.position = new Vector3(29f, 3.5f, 0f);
+            fieldInstance.name = "GravitonField_Demo";
+
+            // Echo Anchor pickup near the start (the ability is normally a boss reward)
+            CreatePickup(levelRoot.transform, "Pickup_EchoAnchor", new Vector3(-5f, -0.9f, 0f), boxSprite,
+                AbilityFlags.EchoAnchor, "ECHO ANCHOR", new Color(0.4f, 0.7f, 1f, 1f));
 
             // Boss arena (x 40..80): a station before the gate, the fight, then a reward and a station after
             CreatePlatform(levelRoot.transform, "Floor_Arena", new Vector3(60f, -2.5f, 0f), new Vector3(40f, 1.5f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
@@ -1082,7 +1103,7 @@ namespace EchoOfTheVoid.Editor
             guideText.fontSize = 13;
             guideText.alignment = TextAnchor.MiddleCenter;
             guideText.color = new Color(0.85f, 0.92f, 1f, 0.95f);
-            guideText.text = "[A / D] Move   |   [SPACE] Jump   |   [K] Dash   |   [J] Attack   |   [SHIFT] Reality Shift   |   [U] Resonance";
+            guideText.text = "[A / D] Move   |   [SPACE] Jump   |   [K] Dash   |   [J] Attack   |   [SHIFT] Reality Shift   |   [U] Resonance  |  [F] Anchor  |  [Q] Gravity";
 
             // Attach PlayerHUD component
             var hud = canvasObj.AddComponent<PlayerHUD>();

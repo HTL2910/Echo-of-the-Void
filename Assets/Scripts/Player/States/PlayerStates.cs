@@ -122,7 +122,9 @@ namespace EchoOfTheVoid.Player.States
                 return;
             }
 
-            if (player.LinearVelocity.y <= 0f)
+            if (player.TryStartRailGrind()) return;
+
+            if (player.VerticalSpeedUp <= 0f)
             {
                 player.ChangeState(new PlayerFallState());
             }
@@ -161,7 +163,9 @@ namespace EchoOfTheVoid.Player.States
                 return;
             }
 
-            if (player.IsTouchingWall && player.LinearVelocity.y < 0f)
+            if (player.TryStartRailGrind()) return;
+
+            if (player.IsTouchingWall && player.VerticalSpeedUp < 0f)
             {
                 player.ChangeState(new PlayerWallSlideState());
                 return;
@@ -230,7 +234,7 @@ namespace EchoOfTheVoid.Player.States
         {
             // Slide down with wall friction
             Vector2 vel = player.LinearVelocity;
-            vel.y = Mathf.Max(vel.y, WALL_SLIDE_SPEED);
+            vel.y = Mathf.Max(vel.y * player.UpSign, WALL_SLIDE_SPEED) * player.UpSign;
             player.SetVelocity(vel);
         }
 
@@ -304,7 +308,7 @@ namespace EchoOfTheVoid.Player.States
             }
             else
             {
-                player.ApplyCustomGravity(isFalling: player.LinearVelocity.y < 0f);
+                player.ApplyCustomGravity(isFalling: player.VerticalSpeedUp < 0f);
             }
         }
 

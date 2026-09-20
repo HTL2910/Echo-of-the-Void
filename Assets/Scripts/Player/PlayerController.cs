@@ -5,6 +5,8 @@ using EchoOfTheVoid.Settings;
 using UnityEngine.InputSystem;
 #endif
 using EchoOfTheVoid.Core;
+using EchoOfTheVoid.Enemies;
+using EchoOfTheVoid.UI;
 using EchoOfTheVoid.Feedback;
 using EchoOfTheVoid.Player.States;
 
@@ -73,6 +75,17 @@ namespace EchoOfTheVoid.Player
         private float _wallJumpLockTimer;
         private float _inputLockTimer;
         private float _lastFallSpeed;
+
+        // Gravity Inversion: +1 = normal, -1 = walking on the ceiling (only possible inside a GravitonField)
+        private float _gravitySign = 1f;
+        private int _gravitonFields;
+        private float _gravityRevertTimer = -1f;
+        private const float GravityRevertDelay = 1f; // spec 4: gravity returns 1 s after leaving the field
+
+        // Rail Grind: an active energy cable Kael is touching
+        private RailCable _railInReach;
+        private float _railCooldown;
+        private EchoAnchor _anchor;
         private float _footstepTimer;
 
         public float HorizontalInput => _horizontalInput;
@@ -100,6 +113,7 @@ namespace EchoOfTheVoid.Player
             _combat = GetComponent<PlayerCombat>();
             _stats = GetComponent<PlayerStats>();
             _abilities = GetComponent<AbilitySet>();
+            _anchor = GetComponent<EchoAnchor>();
 
             // Setup Ground layer mask: Neutral (6), PrimeSolid (7), EchoSolid (8)
             if (groundLayer.value == 0 || groundLayer.value == ~0)
@@ -133,13 +147,14 @@ namespace EchoOfTheVoid.Player
             HandleInputs();
             UpdateTimers();
             UpdateFootsteps();
+            UpdateGravityAndRail();
             _stateMachine.Update();
         }
 
         private void FixedUpdate()
         {
             CheckEnvironment();
-            if (!_isGrounded && _rb.linearVelocity.y < 0f) _lastFallSpeed = Mathf.Max(_lastFallSpeed, -_rb.linearVelocity.y);
+            if (!_isGrounded && VerticalSpeedUp < 0f) _lastFallSpeed = Mathf.Max(_lastFallSpeed, -VerticalSpeedUp);
             _stateMachine.FixedUpdate();
         }
 
@@ -171,7 +186,7 @@ namespace EchoOfTheVoid.Player
             if (jumpPressed) _jumpBufferTimer = jumpBufferDuration;
 
             // Variable Jump: cut vertical speed when jump button is released early
-            if (jumpReleased && _rb.linearVelocity.y > 0f)
+            if (jumpReleased && VerticalSpeedUp > 0f)
             {
                 _rb.linearVelocity = new Vector2(_rb.linearVelocity.x, _rb.linearVelocity.y * 0.5f);
             }
@@ -191,6 +206,9 @@ namespace EchoOfTheVoid.Player
             {
                 _combat.TryResonanceStrike();
             }
+
+            if (_frame.AnchorPressed && _anchor != null) _anchor.Activate();
+            if (_frame.GravityPressed) TryToggleGravity();
         }
 
         private void UpdateTimers()
@@ -213,9 +231,11 @@ namespace EchoOfTheVoid.Player
             // Use world-space bounds so the check is correct whatever the transform scale is
             Bounds bounds = _collider.bounds;
             Vector2 size = new Vector2(bounds.size.x * 0.85f, groundCheckDistance);
-            Vector2 origin = new Vector2(bounds.center.x, bounds.min.y + groundCheckDistance * 0.5f);
+            // "Feet" are at the bottom normally and at the top while gravity is inverted
+            float feetY = _gravitySign > 0f ? bounds.min.y + groundCheckDistance * 0.5f : bounds.max.y - groundCheckDistance * 0.5f;
+            Vector2 origin = new Vector2(bounds.center.x, feetY);
 
-            RaycastHit2D hit = Physics2D.BoxCast(origin, size, 0f, Vector2.down, groundCheckDistance, groundLayer);
+            RaycastHit2D hit = Physics2D.BoxCast(origin, size, 0f, Vector2.down * _gravitySign, groundCheckDistance, groundLayer);
             _isGrounded = hit.collider != null && hit.collider.gameObject != gameObject;
 
             if (_isGrounded)
@@ -324,14 +344,14 @@ namespace EchoOfTheVoid.Player
             }
 
             Vector2 vel = _rb.linearVelocity;
-            float g = (isFalling || vel.y < 0f) ? _fallGravity : _baseGravity;
-            vel.y -= g * Time.fixedDeltaTime;
+            float g = (isFalling || vel.y * _gravitySign < 0f) ? _fallGravity : _baseGravity;
+            vel.y -= _gravitySign * g * Time.fixedDeltaTime;
             _rb.linearVelocity = vel;
         }
 
         public void ExecuteJump()
         {
-            _rb.linearVelocity = new Vector2(_rb.linearVelocity.x, _jumpVelocity);
+            _rb.linearVelocity = new Vector2(_rb.linearVelocity.x, _jumpVelocity * _gravitySign);
             if (_squash != null) _squash.OnJump();
             if (AudioManager.Instance != null) AudioManager.Instance.PlayJump();
             Jumped?.Invoke();
@@ -340,7 +360,7 @@ namespace EchoOfTheVoid.Player
         public void ExecuteWallJump()
         {
             float launchX = -_wallDirection * wallJumpHorizontalSpeed;
-            _rb.linearVelocity = new Vector2(launchX, wallJumpVerticalSpeed);
+            _rb.linearVelocity = new Vector2(launchX, wallJumpVerticalSpeed * _gravitySign);
             _facingDirection = -_wallDirection;
             _wallJumpLockTimer = wallJumpInputLock;
             if (_renderer != null) _renderer.flipX = (_facingDirection < 0f);
@@ -418,7 +438,7 @@ namespace EchoOfTheVoid.Player
         public void TriggerSquashLand()
         {
             if (_squash != null) _squash.OnLand();
-            AudioManager.Play(_lastFallSpeed > 14f ? SfxGroup.LandHard : SfxGroup.LandSoft, 0.8f);
+            AudioManager.Play(_lastFallSpeed > 24f ? SfxGroup.LandHard : SfxGroup.LandSoft, 0.8f);
             _lastFallSpeed = 0f;
             VfxLibrary.Play(VfxId.LandDust, FeetPosition);
         }
@@ -440,6 +460,16 @@ namespace EchoOfTheVoid.Player
 
         public bool IsInputLocked => _inputLockTimer > 0f;
 
+        public bool IsGravityInverted => _gravitySign < 0f;
+        /// <summary>+1 normally, -1 while gravity is inverted. "Up" for Kael is world up times this.</summary>
+        public float UpSign => _gravitySign;
+        /// <summary>Vertical speed measured along Kael's own "up": positive = away from his feet.</summary>
+        public float VerticalSpeedUp => _rb.linearVelocity.y * _gravitySign;
+        public float HalfHeight => _collider.bounds.extents.y;
+        public bool InGravitonField => _gravitonFields > 0;
+        public RailCable RailInReach => (_railInReach != null && _railInReach.IsActive && _railCooldown <= 0f) ? _railInReach : null;
+
+
         /// <summary>Replace the input source (tests, cutscenes, replays).</summary>
         public void SetInput(IPlayerInput input)
         {
@@ -456,9 +486,99 @@ namespace EchoOfTheVoid.Player
             _jumpBufferTimer = 0f;
             _coyoteTimer = 0f;
             _freezeVerticalTimer = 0f;
+            SetGravity(1f);
+            _gravityRevertTimer = -1f;
+            _railInReach = null;
+            _railCooldown = 0f;
+            _anchor?.Clear();
             _rb.linearVelocity = Vector2.zero;
             ResetDashCooldown();
             _stateMachine.ChangeState(new PlayerIdleState());
+        }
+
+        // ------------------------------------------------------------------ Gravity Inversion (spec 4)
+        public void EnterGravitonField()
+        {
+            _gravitonFields++;
+            _gravityRevertTimer = -1f;
+        }
+
+        public void LeaveGravitonField()
+        {
+            _gravitonFields = Mathf.Max(0, _gravitonFields - 1);
+            if (_gravitonFields == 0 && IsGravityInverted)
+            {
+                _gravityRevertTimer = GravityRevertDelay;
+                if (PlayerHUD.Instance != null) PlayerHUD.Instance.ShowAnnouncement("GRAVITY RESTORING", GravityRevertDelay);
+            }
+        }
+
+        /// <returns>true if gravity was flipped.</returns>
+        public bool TryToggleGravity()
+        {
+            if (_gravitonFields <= 0 || !HasAbility(AbilityFlags.GravityInversion)) return false;
+
+            SetGravity(-_gravitySign);
+            _gravityRevertTimer = -1f;
+            return true;
+        }
+
+        private void SetGravity(float sign)
+        {
+            if (Mathf.Approximately(_gravitySign, sign)) return;
+
+            _gravitySign = sign;
+            _rb.linearVelocity = new Vector2(_rb.linearVelocity.x, 0f);
+            _coyoteTimer = 0f;
+            _isGrounded = false;
+            // Flip the picture, not the physics object: rotation leaves scale (and squash & stretch) alone
+            if (_renderer != null) _renderer.transform.localRotation = sign < 0f ? Quaternion.Euler(180f, 0f, 0f) : Quaternion.identity;
+        }
+
+        private void UpdateGravityAndRail()
+        {
+            if (_gravityRevertTimer >= 0f)
+            {
+                _gravityRevertTimer -= Time.deltaTime;
+                if (_gravityRevertTimer < 0f) { SetGravity(1f); _gravityRevertTimer = -1f; }
+            }
+            if (_railCooldown > 0f) _railCooldown -= Time.deltaTime;
+        }
+
+        // ------------------------------------------------------------------ Rail Grind (spec 3.1)
+        private void OnTriggerEnter2D(Collider2D other) => TrackRail(other, true);
+        private void OnTriggerStay2D(Collider2D other) { if (_railInReach == null) TrackRail(other, true); }
+        private void OnTriggerExit2D(Collider2D other) => TrackRail(other, false);
+
+        private void TrackRail(Collider2D other, bool entering)
+        {
+            var rail = other.GetComponent<RailCable>();
+            if (rail == null) return;
+            if (entering) _railInReach = rail;
+            else if (_railInReach == rail) _railInReach = null;
+        }
+
+        /// <summary>Called by the airborne states: latch onto a cable Kael is touching (not while rising fast).</summary>
+        public bool TryStartRailGrind()
+        {
+            var rail = RailInReach;
+            if (rail == null || VerticalSpeedUp > 3f) return false;
+
+            ChangeState(new PlayerRailGrindState(rail));
+            return true;
+        }
+
+        public void ReleaseRail(float cooldownSeconds)
+        {
+            _railCooldown = cooldownSeconds;
+        }
+
+        /// <summary>A jump is buffered (no ground needed): used to jump off a cable.</summary>
+        public bool ConsumeBufferedJump()
+        {
+            if (_jumpBufferTimer <= 0f) return false;
+            _jumpBufferTimer = 0f;
+            return true;
         }
     }
 }

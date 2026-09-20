@@ -26,3 +26,8 @@
 - Cần Claude nối gì:
   - Chạy suite PlayMode tests xác nhận tích hợp Kael Animator & các prefab quái.
   - Tích hợp 2 stem nhạc vào `MusicLayerController` và kiểm tra chuyển realm Prime <-> Echo.
+
+## ✔ Kết quả tích hợp (Claude, 2026-09-20)
+- Đã kiểm: `Player.prefab` có `Animator` + `Kael.controller`; 4 prefab quái có Animator; `MUS_Z1_Prime/Echo/MUS_Menu.ogg` và 30 SFX riêng tồn tại thật.
+- **Đã nối:** 2 stem vào `MusicLayerController` (crossfade 0.18 s, có test); SFX riêng vào `AudioManager` (`SfxGroup`: bước chân Prime/Echo, tiếp đất mềm/cứng, bị đánh, chết, trạm, Anchor sẵn); `SFX_Heartbeat_Loop` vào `LowHealthAudio` (nhịp tim dưới 25% máu, nhanh dần 60→130 BPM). Generator gắn tự động.
+- **Còn lại của Anti:** B1 (18 phòng Z1), B2 sprite Strider/Sentry/Rift Knight, B3 sprite boss, B4–B10 chưa có sản phẩm bàn giao. `Assets/Audio/README.md` ghi 28 SFX, thực tế 30 file (không sao).

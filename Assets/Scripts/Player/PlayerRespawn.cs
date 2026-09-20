@@ -20,8 +20,14 @@ namespace EchoOfTheVoid.Player
 
         private Vector3 _checkpointPosition;
         private RealmType _checkpointRealm = RealmType.Prime;
-        private Vector3 _safePosition;   // last spot Kael stood on solid ground (soft respawn target)
-        private RealmType _safeRealm = RealmType.Prime;
+        // Recent solid-ground positions. A hazard sends Kael to one from a moment ago, not to the spot right beside it
+        // (a player still holding "run" would otherwise die again at once).
+        private struct GroundSample { public Vector3 position; public RealmType realm; public float time; }
+        private readonly System.Collections.Generic.List<GroundSample> _ground = new System.Collections.Generic.List<GroundSample>();
+        private float _nextSampleTime;
+        private const float SampleInterval = 0.1f;
+        private const float SafeDelay = 0.4f;     // how far back in time the safe spot is
+        private const float HistorySeconds = 3f;
         private bool _isRespawning;
 
         public bool IsRespawning => _isRespawning;
@@ -33,7 +39,7 @@ namespace EchoOfTheVoid.Player
             _rb = GetComponent<Rigidbody2D>();
             _renderer = GetComponentInChildren<SpriteRenderer>();
             _checkpointPosition = transform.position;
-            _safePosition = transform.position;
+            _ground.Add(new GroundSample { position = transform.position, realm = RealmType.Prime, time = Time.time });
         }
 
         private void OnEnable()
@@ -50,11 +56,17 @@ namespace EchoOfTheVoid.Player
         {
             if (_isRespawning) return;
 
-            // Remember the last solid ground so hazards can put Kael back next to where he was
-            if (_controller.IsGrounded)
+            // Remember where Kael recently stood on solid ground
+            if (_controller.IsGrounded && Time.time >= _nextSampleTime)
             {
-                _safePosition = transform.position;
-                _safeRealm = RealityManager.Instance != null ? RealityManager.Instance.CurrentRealm : RealmType.Prime;
+                _nextSampleTime = Time.time + SampleInterval;
+                _ground.Add(new GroundSample
+                {
+                    position = transform.position,
+                    realm = RealityManager.Instance != null ? RealityManager.Instance.CurrentRealm : RealmType.Prime,
+                    time = Time.time
+                });
+                while (_ground.Count > 1 && Time.time - _ground[0].time > HistorySeconds) _ground.RemoveAt(0);
             }
 
             // Fell out of the world: soft respawn, HP unchanged (Spec D9)
@@ -70,6 +82,22 @@ namespace EchoOfTheVoid.Player
             if (_isRespawning) return false;
             StartCoroutine(RespawnRoutine(hardDeath: false));
             return true;
+        }
+
+        /// <summary>Newest ground sample at least <see cref="SafeDelay"/> old; otherwise the oldest one we have.</summary>
+        private void PickSafeGround(out Vector3 position, out RealmType realm)
+        {
+            position = _checkpointPosition;
+            realm = _checkpointRealm;
+            if (_ground.Count == 0) return;
+
+            GroundSample chosen = _ground[0];
+            for (int i = _ground.Count - 1; i >= 0; i--)
+            {
+                if (Time.time - _ground[i].time >= SafeDelay) { chosen = _ground[i]; break; }
+            }
+            position = chosen.position;
+            realm = chosen.realm;
         }
 
         public void SetCheckpoint(Vector3 position, RealmType realm)
@@ -100,8 +128,9 @@ namespace EchoOfTheVoid.Player
 
             yield return new WaitForSecondsRealtime(hardDeath ? respawnDelay : 0.3f);
 
-            Vector3 targetPosition = hardDeath ? _checkpointPosition : _safePosition;
-            RealmType targetRealm = hardDeath ? _checkpointRealm : _safeRealm;
+            Vector3 targetPosition = _checkpointPosition;
+            RealmType targetRealm = _checkpointRealm;
+            if (!hardDeath) PickSafeGround(out targetPosition, out targetRealm);
 
             transform.position = targetPosition;
             _rb.simulated = true;
@@ -113,6 +142,8 @@ namespace EchoOfTheVoid.Player
                 RealityManager.Instance.SwitchRealm(targetRealm);
             }
 
+            _ground.Clear();
+            _ground.Add(new GroundSample { position = targetPosition, realm = targetRealm, time = Time.time });
             _controller.ResetForRespawn();
             _controller.enabled = true;
 

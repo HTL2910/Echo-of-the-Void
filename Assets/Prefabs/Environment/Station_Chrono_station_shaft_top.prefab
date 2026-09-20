@@ -271,4 +271,3 @@ MonoBehaviour:
   stationId: station_shaft_top
   healAmount: 25
   respawnHeight: 0.9
-  saveSlot: 0

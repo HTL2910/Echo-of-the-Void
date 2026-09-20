@@ -7,7 +7,7 @@ namespace EchoOfTheVoid.Settings
 {
     public enum PlayerAction
     {
-        MoveLeft, MoveRight, Jump, Attack, Dash, Shift, Resonance, Interact
+        MoveLeft, MoveRight, Jump, Attack, Dash, Shift, Resonance, Interact, Anchor, Gravity
     }
 
     /// <summary>
@@ -128,6 +128,8 @@ namespace EchoOfTheVoid.Settings
             _keys[PlayerAction.Shift] = new List<Key> { Key.LeftShift, Key.RightShift };
             _keys[PlayerAction.Resonance] = new List<Key> { Key.U, Key.L };
             _keys[PlayerAction.Interact] = new List<Key> { Key.E };
+            _keys[PlayerAction.Anchor] = new List<Key> { Key.F };
+            _keys[PlayerAction.Gravity] = new List<Key> { Key.Q };
 
             _pad.Clear();
             _pad[PlayerAction.Jump] = GamepadButton.South;
@@ -136,6 +138,8 @@ namespace EchoOfTheVoid.Settings
             _pad[PlayerAction.Shift] = GamepadButton.RightShoulder;
             _pad[PlayerAction.Resonance] = GamepadButton.RightTrigger;
             _pad[PlayerAction.Interact] = GamepadButton.North;
+            _pad[PlayerAction.Anchor] = GamepadButton.LeftShoulder;
+            _pad[PlayerAction.Gravity] = GamepadButton.LeftTrigger;
         }
     }
 }

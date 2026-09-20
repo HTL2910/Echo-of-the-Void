@@ -11,6 +11,8 @@ namespace EchoOfTheVoid.Player
         public bool AttackPressed;
         public bool ResonancePressed;
         public bool InteractPressed;  // Trạm Chrono, monolith...
+        public bool AnchorPressed;    // Echo Anchor
+        public bool GravityPressed;   // Gravity Inversion
     }
 
     /// <summary>

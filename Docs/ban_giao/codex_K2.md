@@ -33,4 +33,9 @@
 
 ## Trạng thái tích hợp
 
-- [ ] ✔ tích hợp (chờ Claude)
+- [x] ✔ tích hợp (Claude)
+
+## ✔ Kết quả tích hợp (Claude, 2026-09-20)
+- Prefab `VoidStrider`, `PrismSentry` (kèm `RailCable`) được sinh và đặt vào màn thử. **Đã đặt vào `Prototype_Level1`.**
+- Lỗi đã sửa khi tích hợp: script tạo prefab gán `tag = "Enemy"` nhưng tag đó **không tồn tại trong project** nên script ném lỗi và **không tạo được prefab nào** (thư mục trống). Đã bỏ dòng đó (không nơi nào dùng tag).
+- **Việc còn của Claude (L9):** trạng thái Rail Grind cho Kael dùng `RailCable`. Chưa làm.

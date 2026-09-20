@@ -17,7 +17,8 @@ namespace EchoOfTheVoid.UI
         private static readonly PlayerAction[] Rows =
         {
             PlayerAction.MoveLeft, PlayerAction.MoveRight, PlayerAction.Jump, PlayerAction.Attack,
-            PlayerAction.Dash, PlayerAction.Shift, PlayerAction.Resonance, PlayerAction.Interact
+            PlayerAction.Dash, PlayerAction.Shift, PlayerAction.Resonance, PlayerAction.Interact,
+            PlayerAction.Anchor, PlayerAction.Gravity
         };
 
         private static readonly float[] DamageSteps = { 1f, 0.75f, 0.5f };
@@ -102,7 +103,7 @@ namespace EchoOfTheVoid.UI
         public void ShowControls()
         {
             Session.Cancel();
-            Rebuild(new Vector2(1100f, 900f));
+            Rebuild(new Vector2(1100f, 1010f));
             _bindingButtons.Clear();
 
             UiKit.CreateLabel(_panel, "CONTROLS   (click, then press the new key)", 34, _font, UiKit.Accent, height: 56f);

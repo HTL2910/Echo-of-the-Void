@@ -110,7 +110,7 @@ Spec §5.1: HP 130, chém 25, dậm đất 35 (sóng cao 1.2 tile), tốc độ 
 
 ## K8. Cơ chế môi trường Z2/Z3  (P2)
 
-Bánh răng quay và luân phiên hai thế giới, con lắc, ống hơi (steam vent) theo chu kỳ, biển axit thời gian (sát thương/chết mềm), luồng khí tím (**Graviton Field**: Claude sẽ dùng cho Gravity Inversion, hãy tạo trigger volume có tên `GravitonField` để Claude nối), gai trần.
+Bánh răng quay và luân phiên hai thế giới, con lắc, ống hơi (steam vent) theo chu kỳ, biển axit thời gian (sát thương/chết mềm), luồng khí tím (**Graviton Field**: `Environment/GravitonField.cs` **đã có** do Claude làm, Codex chỉ cần đặt prefab `Assets/Prefabs/Mechanics/Mech_GravitonField.prefab` vào phòng Z3 và làm hiệu ứng nếu muốn; không tạo lại component), gai trần.
 
 **Xong khi:** mỗi cơ chế có prefab + test.
 **Ghi chú:**

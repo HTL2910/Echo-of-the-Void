@@ -16,3 +16,6 @@
   - Đang tiếp tục triển khai K2 (Void Strider & Prism Sentry) và K3 (Cơ chế môi trường Z1).
 - Cần Claude nối gì:
   - Kiểm tra và tích hợp task K1.
+
+## ✔ Kết quả tích hợp (Claude, 2026-09-20)
+- `EnemyAnimationDriver`, Poise/Stun, `EnemyRespawner` chạy cùng bộ test chung. Tích hợp đạt.

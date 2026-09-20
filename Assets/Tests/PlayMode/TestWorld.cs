@@ -8,7 +8,7 @@ namespace EchoOfTheVoid.Tests
     public class FakeInput : IPlayerInput
     {
         public float Move;
-        private bool _jump, _jumpReleased, _dash, _interact, _shift, _attack;
+        private bool _jump, _jumpReleased, _dash, _interact, _shift, _attack, _anchor, _gravity;
 
         public void PressJump() => _jump = true;
         public void ReleaseJump() => _jumpReleased = true;
@@ -16,6 +16,8 @@ namespace EchoOfTheVoid.Tests
         public void PressInteract() => _interact = true;
         public void PressShift() => _shift = true;
         public void PressAttack() => _attack = true;
+        public void PressAnchor() => _anchor = true;
+        public void PressGravity() => _gravity = true;
 
         public PlayerInputFrame Poll()
         {
@@ -27,9 +29,11 @@ namespace EchoOfTheVoid.Tests
                 DashPressed = _dash,
                 InteractPressed = _interact,
                 ShiftPressed = _shift,
-                AttackPressed = _attack
+                AttackPressed = _attack,
+                AnchorPressed = _anchor,
+                GravityPressed = _gravity
             };
-            _jump = _jumpReleased = _dash = _interact = _shift = _attack = false;
+            _jump = _jumpReleased = _dash = _interact = _shift = _attack = _anchor = _gravity = false;
             return frame;
         }
     }
@@ -44,6 +48,7 @@ namespace EchoOfTheVoid.Tests
         public PlayerStats Stats;
         public PlayerRespawn Respawn;
         public AbilitySet Abilities;
+        public EchoAnchor Anchor;
         public Rigidbody2D Rb;
         private readonly List<GameObject> _boxes = new List<GameObject>();
         public readonly int NeutralLayer = LayerMask.NameToLayer("Neutral");
@@ -94,6 +99,7 @@ namespace EchoOfTheVoid.Tests
             go.AddComponent<PlayerRespawn>(); // brings PlayerController via RequireComponent
             go.AddComponent<PlayerAnimationDriver>();
             go.AddComponent<AbilitySet>();
+            go.AddComponent<EchoAnchor>();
 
             Controller = go.GetComponent<PlayerController>();
             Controller.SetGroundLayer(1 << NeutralLayer);
@@ -101,6 +107,7 @@ namespace EchoOfTheVoid.Tests
             Stats = go.GetComponent<PlayerStats>();
             Respawn = go.GetComponent<PlayerRespawn>();
             Abilities = go.GetComponent<AbilitySet>();
+            Anchor = go.GetComponent<EchoAnchor>();
             Rb = rb;
 
             go.SetActive(true);
