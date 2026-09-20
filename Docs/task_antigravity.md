@@ -4,6 +4,11 @@
 
 Tick `[x]` khi xong và ghi ngắn gọn ở mục "Ghi chú" của task (đường dẫn file đã thêm, điều gì chưa làm được).
 
+## Bàn giao và commit (bắt buộc, xem `tich_hop.md`)
+
+- Commit bắt đầu bằng `[anti]`, ví dụ `[anti] feat(...): ...`. Trước khi commit chạy `python3 Tools/check_ownership.py --agent anti --working`; dòng `NGOÀI PHẠM VI` thì bỏ file đó ra.
+- Xong một task: tạo `Docs/ban_giao/anti_<mã task>.md` theo mẫu trong `tich_hop.md`. **Claude sẽ tích hợp** (nối vào HUD, âm thanh, scene, save...) và xác nhận `✔ tích hợp`; chỉ tick `[x]` ở đây sau đó.
+
 ## Quy tắc chung
 
 1. **Không sửa `.cs`, `.asmdef`, `ProjectSettings/`, `Packages/`, `Assets/Editor/`, `Assets/Tests/`.** Cần đổi code: ghi vào `Docs/yeu_cau_tu_anti.md`.
@@ -133,3 +138,75 @@ Claude đã xong `RealityTilemap` và prefab phòng mẫu. Khi A3 (tileset + pal
 ## Yêu cầu đổi code từ Anti
 
 Ghi vào `Docs/yeu_cau_tu_anti.md`, mỗi dòng: `[ngày] cần gì | ở đâu | để làm gì`.
+
+
+---
+
+# GIAI ĐOẠN 2: LÊN 100% (Anti làm song song với Claude và Codex)
+
+Xem `ke_hoach_den_100.md` (ai làm gì, thứ tự, tiêu chí 100%). Quy tắc chung ở đầu file này vẫn áp dụng. Thêm: chỉ tick khi **file có thật trên ổ đĩa** và mở được trong Unity; báo bằng danh sách đường dẫn.
+
+## B0. Bù chỗ còn thiếu của giai đoạn 1  (làm trước tiên)
+
+- [ ] `Assets/Prefabs/Player/Player.prefab`: thêm `Animator` vào `Visual`, gán `Kael.controller` (đúng tham số ở `phan_cong_code_va_noi_dung.md` mục 4). Claude sẽ kiểm bằng test.
+- [ ] `Assets/Audio/Music/MUS_Z1_Prime.ogg`, `MUS_Z1_Echo.ogg`, `MUS_Menu.ogg` và `Assets/Audio/SFX/Custom/*.ogg` (28 file như đã ghi): hiện **không có file nào** trong hai thư mục này. Tạo lại đúng đường dẫn; 2 stem phải **cùng BPM, cùng số mẫu**, loop khít.
+- [ ] Gắn Animator cho prefab quái (`Assets/Prefabs/Enemies/`), controller tự chạy vòng Idle/Walk (Claude/Codex chưa điều khiển tham số).
+**Ghi chú bàn giao B0:** Đã hoàn thành 100% asset của B0 (Player Animator & spritesheet 64 frame, 3 file nhạc và 28 file SFX custom, 4 Animation clips + 4 AnimatorControllers quái trong `Assets/Art/Animations/Enemies/` và gắn Animator vào child `Visual` của 4 prefab quái). Đã lập biên bản bàn giao tại `Docs/ban_giao/anti_B0.md` chờ Claude kiểm tra và tích hợp.
+
+
+## B1. Dựng Zone 1 (18 phòng)  (P1, việc lớn nhất của Anti)
+
+Dùng `Assets/Prefabs/Levels/Room_Template.prefab` (đã có 3 tilemap Neutral/Prime/Echo cấu hình sẵn). Mỗi phòng là một scene `Assets/Scenes/Zone1/Zone1_Room01.unity`...`Room18`. Theo Kishōtenketsu (spec §6.2):
+1. **Phòng 1–3 (Safe Sandbox):** không bẫy chết, dạy chạy/nhảy, rồi Shift (1 bệ Prime + 1 bệ Echo, gờ cao bắt buộc Shift).
+2. **Phòng 4–8:** vực gai (Prime = gai, Echo = đệm nảy), Piston Boots nhặt được ở cuối chuỗi này; giếng dạy Wall Jump.
+3. **Phòng 9–14:** kết hợp: nhảy tường → Shift trên không → dash qua cổng năng lượng → chém quái hồi dash. Thêm Chrono-Crawler, Void Weaver, Void Strider, Prism Sentry.
+4. **Phòng 15–17:** bài kiểm tra tổng hợp + một nhánh bí mật (vách pha lê tím, cần Resonance sau này) chứa Chrono Heart.
+5. **Phòng 18:** đấu trường Sentinel-01 (sàn rộng, tường chắn cho Missile Rain, 2 bệ Prime/Echo).
+- Trạm Chrono: đầu mỗi cụm ~6 phòng và ngay trước boss. Đặt `Level_Goal_Rift`/cổng sang phòng kế.
+- Quy tắc kích thước (spec §2.2, §6.3): nhảy ngang thiết kế ≤ **6 tiles**, bậc ≤ **3 tiles**, trần ≥ **2 tiles**; mỗi phòng dạy một ý; luôn có lối thoát, không để Shift nhốt người chơi.
+- Cần Claude: `RoomBounds` và chuyển phòng (Claude L3). Trong lúc chờ, dựng phòng và đặt Kael thử nghiệm.
+
+**Xong khi:** đi từ phòng 1 tới boss được (khi cơ chế đủ), chơi thử không kẹt.
+
+## B2. Nghệ thuật quái còn thiếu  (P1)
+
+Void Strider, Prism Sentry, Rift Knight (mỗi loại 2 biến thể Prime/Echo, viền liền/đứt như A2). Đặt sprite vào child `Visual` của prefab do **Codex** tạo (`Assets/Prefabs/Enemies/`). Animation: xem spec §8.2.
+
+## B3. Nghệ thuật boss  (P1 Sentinel-01, còn lại P2/P3)
+
+- **Sentinel-01** (P1): kích thước lớn (khoảng 5×5 tiles), thân trên tím phát sáng (Echo), chân + xích xanh kim loại (Prime). Animation: Idle, SweepKick, MissileFire, LaserSweep, Overheat (gục), Death. Prefab do Codex tạo.
+- Keeper Myra, Mirror Doppelganger (bóng của Kael), Rift Knight Prime, Chronos (3 giai đoạn, biến đổi rõ rệt).
+
+## B4. Tileset + nền cho Z2, Z3, Z4, Core  (P2/P3)
+
+Mỗi khu 3 bộ tile (Neutral/Prime/Echo) + Tile Palette + nền parallax 2–3 lớp: Z2 tháp đồng hồ (đồng, xanh lục), Z3 rừng pha lê (xanh ngọc/tím), Z4 hầm mộ (xám tím), Core (trắng-đen-tím, sàn vỡ). Cùng quy tắc: Echo = viền đứt/phát sáng (không chỉ khác màu).
+
+## B5. Dựng Z2, Z3, Z4, Core (24 + 24 + 24 + 3 phòng)  (P2/P3)
+
+Cùng cách với B1, mỗi khu có chủ đề và cơ chế riêng (spec §4, §6). Theo thứ tự khu; **mỗi khu chỉ bắt đầu khi khu trước chơi được**.
+
+## B6. Nghệ thuật UI  (P1/P2)
+
+Logo game, màn hình menu chính, khung HUD Aether-punk, khung tạm dừng, **bản đồ kiểu Blueprint** (phòng đã thăm trắng, `?` nhấp nháy, icon ổ khóa), khung hội thoại Iris, ảnh cutscene (mở đầu, 3 kết thúc), màn credits.
+
+## B7. Âm nhạc và SFX còn lại  (P1 Z1, còn lại P2/P3)
+
+Nhạc: Z2, Z3, Z4, Core (mỗi khu **2 stem** cùng BPM), 4 nhạc boss, nhạc Chronos 3 giai đoạn, 3 kết thúc, sting nhận kỹ năng. SFX riêng còn thiếu theo spec §7.2. Ghi nguồn vào `Assets/CREDITS.md`.
+
+## B8. Văn bản  (P2/P3)
+
+Trong `Docs/noi_dung/`: lời thoại Iris theo từng khu (giọng lạnh lùng, duy lý, dần đồng cảm), **12 Memory Monolith** (3 mỗi khu; hồi ký của Kael và Hội Đồng Vô Cực, 20–40 giây đọc), 3 đoạn kết thúc (spec §10). Tiếng Anh gốc + bản tiếng Việt. Định dạng: một file `.md` mỗi khu, mỗi mục có mã (`monolith_z1_01`...).
+
+## B9. VFX bổ sung  (P2)
+
+Hiệu ứng boss (tên lửa, laser, sóng chấn), gai/đệm nảy, luồng khí tím (Graviton Field), Echo Anchor (đặt/hoán đổi), cổng năng lượng, axit, sóng Chronos. Đặt trong `Assets/Prefabs/VFX/` theo cùng quy ước (tự hủy, không loop).
+
+## B10. Ánh sáng môi trường  (P3)
+
+Light 2D cho từng khu (tông vàng đồng 5200K ở Prime, tím 8500K ở Echo, spec §8.3), đèn của trạm và vật phẩm.
+
+---
+
+## Thứ tự khuyến nghị cho Anti
+
+B0 → B1 (song song B2, B3 Sentinel-01, B6, B7 nhạc Z1) → B4 → B5 → phần còn lại. **B1 là 20% cả game: bắt đầu sớm và chia nhỏ theo cụm 6 phòng.**
