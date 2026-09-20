@@ -8,13 +8,14 @@ namespace EchoOfTheVoid.Tests
     public class FakeInput : IPlayerInput
     {
         public float Move;
-        private bool _jump, _jumpReleased, _dash, _interact, _shift;
+        private bool _jump, _jumpReleased, _dash, _interact, _shift, _attack;
 
         public void PressJump() => _jump = true;
         public void ReleaseJump() => _jumpReleased = true;
         public void PressDash() => _dash = true;
         public void PressInteract() => _interact = true;
         public void PressShift() => _shift = true;
+        public void PressAttack() => _attack = true;
 
         public PlayerInputFrame Poll()
         {
@@ -25,9 +26,10 @@ namespace EchoOfTheVoid.Tests
                 JumpReleased = _jumpReleased,
                 DashPressed = _dash,
                 InteractPressed = _interact,
-                ShiftPressed = _shift
+                ShiftPressed = _shift,
+                AttackPressed = _attack
             };
-            _jump = _jumpReleased = _dash = _interact = _shift = false;
+            _jump = _jumpReleased = _dash = _interact = _shift = _attack = false;
             return frame;
         }
     }

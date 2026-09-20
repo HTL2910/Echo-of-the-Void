@@ -111,6 +111,7 @@ namespace EchoOfTheVoid.Enemies
             if (isDead) return;
             isDead = true;
             OnDeath?.Invoke();
+            VfxLibrary.Play(VfxId.EnemyDeath, transform.position);
 
             if (col != null) col.enabled = false;
             if (rb != null) rb.linearVelocity = Vector2.zero;

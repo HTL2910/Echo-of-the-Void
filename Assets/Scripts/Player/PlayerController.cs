@@ -347,6 +347,7 @@ namespace EchoOfTheVoid.Player
             _rb.linearVelocity = new Vector2(_facingDirection * dashSpeed, 0f);
             if (_squash != null) _squash.OnDash();
             if (AudioManager.Instance != null) AudioManager.Instance.PlayDash();
+            VfxLibrary.Play(VfxId.DashDust, FeetPosition, flipX: _facingDirection < 0f);
             Dashed?.Invoke();
 
             RealmType realm = (RealityManager.Instance != null) ? RealityManager.Instance.CurrentRealm : RealmType.Prime;
@@ -392,6 +393,16 @@ namespace EchoOfTheVoid.Player
         public void TriggerSquashLand()
         {
             if (_squash != null) _squash.OnLand();
+            VfxLibrary.Play(VfxId.LandDust, FeetPosition);
+        }
+
+        private Vector3 FeetPosition
+        {
+            get
+            {
+                Bounds b = _collider.bounds;
+                return new Vector3(b.center.x, b.min.y, 0f);
+            }
         }
 
         /// <summary>Replace the input source (tests, cutscenes, replays).</summary>

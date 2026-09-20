@@ -96,6 +96,18 @@ namespace EchoOfTheVoid.Editor
             AudioClip jumpClip = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/SFX/SciFiSounds/Audio/spaceEngineSmall_001.ogg");
             AudioClip resClip = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/SFX/SciFiSounds/Audio/laserLarge_000.ogg");
             audioMgr.ConfigureClips(slashes, hitClip, dashClip, shiftClip, jumpClip, resClip);
+
+            // Adaptive music: silent until the two stems exist (Assets/Audio/Music)
+            var music = managersObj.AddComponent<MusicLayerController>();
+            music.Configure(AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/Music/MUS_Z1_Prime.ogg"),
+                            AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/Music/MUS_Z1_Echo.ogg"));
+
+            // One-shot particle effects (Assets/Prefabs/VFX); missing prefabs are simply skipped
+            var vfx = managersObj.AddComponent<VfxLibrary>();
+            foreach (VfxId id in System.Enum.GetValues(typeof(VfxId)))
+            {
+                vfx.Configure(id, AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/Prefabs/VFX/{VfxPrefabName(id)}.prefab"));
+            }
             audioMgr.ConfigureShiftDenied(AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/SFX/InterfaceSounds/Audio/error_001.ogg"));
 
             // 7. Setup Player
@@ -648,6 +660,21 @@ namespace EchoOfTheVoid.Editor
             // Attach PlayerHUD component
             var hud = canvasObj.AddComponent<PlayerHUD>();
             hud.BindElements(hpFill, ceFill, dashFill, realmText, null, annText);
+        }
+
+        private static string VfxPrefabName(VfxId id)
+        {
+            switch (id)
+            {
+                case VfxId.SlashArcPrime: return "VFX_SlashArc_Prime";
+                case VfxId.SlashArcEcho: return "VFX_SlashArc_Echo";
+                case VfxId.ShiftWave: return "VFX_ShiftWave";
+                case VfxId.DashDust: return "VFX_DashDust";
+                case VfxId.LandDust: return "VFX_LandDust";
+                case VfxId.ImpactClean: return "VFX_Impact_Clean";
+                case VfxId.ImpactDeflect: return "VFX_Impact_Deflect";
+                default: return "VFX_EnemyDeath";
+            }
         }
 
         private static void CreatePickup(Transform parent, string name, Vector3 pos, Sprite sprite,

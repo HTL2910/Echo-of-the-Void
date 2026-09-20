@@ -202,6 +202,7 @@ namespace EchoOfTheVoid.Player
                     HitFeedback feedback = damageable.TakeDamage(info);
 
                     if (AudioManager.Instance != null) AudioManager.Instance.PlayHit();
+                    VfxLibrary.Play(feedback.IsDeflected ? VfxId.ImpactDeflect : VfxId.ImpactClean, hit.ClosestPoint(center));
                     OnEnemyHit?.Invoke(feedback.IsDeflected, feedback.DealtDamage);
 
                     // Restore +10 CE on hit
@@ -227,6 +228,15 @@ namespace EchoOfTheVoid.Player
 
         private void SpawnSlashVisual(Vector2 pos, Vector2 size, bool isFinisher, float dir)
         {
+            // Artist-made slash arc when available, otherwise the procedural fallback below
+            VfxId arc = (RealityManager.Instance != null && RealityManager.Instance.CurrentRealm == RealmType.Echo)
+                ? VfxId.SlashArcEcho : VfxId.SlashArcPrime;
+            if (VfxLibrary.Has(arc))
+            {
+                VfxLibrary.Play(arc, pos, flipX: dir < 0f);
+                return;
+            }
+
             EnsureSlashSprite();
 
             GameObject slashObj = new GameObject("Slash_Visual");

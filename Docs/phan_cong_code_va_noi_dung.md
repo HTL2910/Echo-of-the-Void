@@ -29,6 +29,8 @@ Anti ghi yêu cầu vào `Docs/yeu_cau_tu_anti.md` (một dòng một yêu cầu
 
 ## 4. Hợp đồng dữ liệu (đừng đổi tên tùy tiện)
 
+**Phím tay cầm (đã khớp spec):** Nhảy A · Chém X · Dash B · Shift RB · Resonance RT · Tương tác Y.
+
 **Tag/Layer:** `Player` (tag + layer), layer `Neutral`, `PrimeSolid`, `EchoSolid`, `Enemy`, `Hazard`, `Interactable`.
 Tilemap nền dùng layer `Neutral`; tile chỉ đặc ở Prime dùng `PrimeSolid`; chỉ đặc ở Echo dùng `EchoSolid`.
 
@@ -46,18 +48,28 @@ Tilemap nền dùng layer `Neutral`; tile chỉ đặc ở Prime dùng `PrimeSol
 
 Sprite Kael: khung 32×32 px, hitbox 14×26 px nằm ở giữa/đáy khung.
 
+**Cấu trúc prefab (Kael và quái), giữ nguyên khi chỉnh:**
+
+```
+Player            <- root: scale (1,1,1), Rigidbody2D, BoxCollider2D 0.875 x 1.625, các script
+└── Visual        <- SpriteRenderer (sprite 32x32 của Anti, Animator gắn ở đây hoặc ở root)
+```
+- **Đừng đổi scale của root** (hitbox tính theo đơn vị thật). Đổi kích thước hình ảnh bằng scale của `Visual`.
+- Đổi sprite/animation: chỉ sửa trong `Visual`. Squash & stretch, ghost trail, nháy đỏ đều tự tìm `SpriteRenderer` ở `Visual`.
+- Quái cũng theo cấu trúc trên (`Assets/Prefabs/Enemies/`).
+
 **Tên file (âm thanh):** `SFX_<Nhóm>_<Tên>.ogg`, ví dụ `SFX_Blade_Hit_Clean_01.ogg`. Nhạc: `MUS_<Khu>_<Prime|Echo>.ogg` (2 stem cùng BPM).
 
 **Tên sprite:** `spr_<entity>_<anim>_<frame>`.
 
 ## 5. Đầu việc của Claude (thứ tự)
 
-1. Prefab hóa Kael và quái (đang làm).
-2. `PlayerAnimationDriver` (đọc controller, điều khiển Animator theo bảng trên).
-3. Trạm Chrono (checkpoint, +25 HP) + save/load JSON.
-4. Chặn Shift khi vật đặc đè Kael; đổi va chạm realm bằng layer trong 1 frame.
-5. Hệ thống mở khóa kỹ năng (`AbilitySet`); khóa Wall Jump tới khi có Piston Boots.
-6. Test tự động (nhảy 3.5 tiles, dash 4 tiles, hồi sinh…).
+1. ~~Prefab hóa Kael và quái~~ (xong; `Assets/Prefabs/`).
+2. ~~`PlayerAnimationDriver`~~ (xong; gắn sẵn trên prefab Kael, chỉ cần thêm `Animator` vào `Visual` và tạo tham số theo bảng mục 4).
+3. ~~Trạm Chrono + lưu JSON~~ (xong: `Assets/Prefabs/Environment/Station_Chrono_*`; Kael đứng trong vùng trạm và bấm `E` / Y trên tay cầm. Chưa có màn Continue để nạp lại).
+4. ~~Chặn Shift khi vật đặc của thế giới đích chồng lên Kael~~ (xong: hiện chữ `SHIFT BLOCKED` + âm lỗi, không tốn cooldown). Còn lại: đổi va chạm realm bằng layer thay vì bật/tắt collider (làm cùng lúc dựng tilemap).
+5. ~~`AbilitySet` + khóa kỹ năng~~ (xong: Wall Jump khóa tới khi nhặt Piston Boots, Resonance tới khi nhặt Resonance Core; Shift và Dash mở sẵn theo D8). Cũng xong: `RealityTilemap` và `Room_Template.prefab` để Anti dựng level.
+6. ~~Test tự động~~ (đã có 7 test PlayMode trong `Assets/Tests/PlayMode`, mở rộng dần).
 7. Void Strider, Prism Sentry.
 8. Boss Sentinel-01 (FSM, Poise).
 9. Nhạc 2 stem + crossfade equal-power, AudioMixer, low-HP snapshot.
@@ -70,3 +82,17 @@ Sprite Kael: khung 32×32 px, hitbox 14×26 px nằm ở giữa/đáy khung.
 3. VFX: vệt chém xanh ngọc/tím, ghost trail, bụi, sóng Shift (dùng Kenney Particle Pack).
 4. Nhạc + SFX còn thiếu (xem `echo_of_the_void_master_spec.md` §7).
 5. Dựng phòng Z1 (18 phòng) bằng Tilemap khi bộ tile xong.
+
+## 7. Chạy Unity ở dòng lệnh: tránh đụng nhau
+
+Project chỉ mở được bởi **một** tiến trình Unity tại một thời điểm (khóa `Temp/UnityLockfile`). Nếu Unity Editor hoặc một lệnh batchmode khác đang chạy, lệnh thứ hai sẽ thoát ngay không báo lỗi rõ ràng (exit 1, không có file kết quả).
+
+- Trước khi chạy: `ps aux | grep "[U]nity.app/Contents/MacOS/Unity"`, phải rỗng.
+- Anti và Claude không chạy Unity cùng lúc. Dùng file khóa `.unity_busy` ở thư mục gốc project (chi tiết trong `task_antigravity.md`): thấy file tồn tại thì chờ; tạo file khi bắt đầu, xóa khi xong.
+- Chạy test: `Unity -batchmode -nographics -projectPath <đường dẫn> -runTests -testPlatform PlayMode -testResults <file.xml> -logFile <file.log>` (không thêm `-quit`).
+
+## 8. Đã phát hiện và sửa (để khỏi lặp lại)
+
+- Kael lơ lửng: Idle/Run không có trọng lực nhưng chỉ chuyển sang Fall khi đã rơi. Đã sửa; có test hồi quy.
+- Hitbox Kael cao 2.64 thay vì 1.625 (root có scale trùng với size collider), ô dò đất/tường sai vị trí. Đã sửa bằng cấu trúc `Visual` và dò theo `collider.bounds`.
+- `SquashAndStretch` co giãn cả root (kéo theo collider). Nay co giãn `Visual`.
