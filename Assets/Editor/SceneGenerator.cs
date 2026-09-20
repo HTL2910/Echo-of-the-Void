@@ -3,6 +3,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
+using UnityEngine.UI;
 using EchoOfTheVoid.Core;
 using EchoOfTheVoid.Combat;
 using EchoOfTheVoid.Environment;
@@ -73,12 +74,26 @@ namespace EchoOfTheVoid.Editor
             light2D.color = Color.white;
             light2D.intensity = 1.0f;
 
-            // 6. Setup Managers
+            // 6. Setup Managers & Audio
             GameObject managersObj = new GameObject("Managers");
             managersObj.AddComponent<RealityManager>();
             managersObj.AddComponent<HitStopManager>();
             managersObj.AddComponent<CameraShakeManager>();
             managersObj.AddComponent<RealityUIIndicator>();
+
+            var audioMgr = managersObj.AddComponent<AudioManager>();
+            AudioClip[] slashes = new AudioClip[]
+            {
+                AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/SFX/SciFiSounds/Audio/laserSmall_000.ogg"),
+                AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/SFX/SciFiSounds/Audio/laserSmall_001.ogg"),
+                AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/SFX/SciFiSounds/Audio/laserSmall_002.ogg")
+            };
+            AudioClip hitClip = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/SFX/SciFiSounds/Audio/impactMetal_001.ogg");
+            AudioClip dashClip = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/SFX/SciFiSounds/Audio/thrusterFire_000.ogg");
+            AudioClip shiftClip = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/SFX/SciFiSounds/Audio/forceField_000.ogg");
+            AudioClip jumpClip = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/SFX/SciFiSounds/Audio/spaceEngineSmall_001.ogg");
+            AudioClip resClip = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/SFX/SciFiSounds/Audio/laserLarge_000.ogg");
+            audioMgr.ConfigureClips(slashes, hitClip, dashClip, shiftClip, jumpClip, resClip);
 
             // 7. Setup Player
             GameObject playerObj = new GameObject("Player");
@@ -172,7 +187,10 @@ namespace EchoOfTheVoid.Editor
             // VoidWeaver Mob (Echo Flying Sniper)
             CreateVoidWeaver(combatRoot.transform, "Weaver_Echo", new Vector3(26f, 3.0f, 0f), boxSprite, enemyLayer, weaverSO);
 
-            // 10. Save Scene
+            // 10. Setup Player HUD (Canvas UI)
+            CreateHUD(boxSprite);
+
+            // 11. Save Scene
             if (!Directory.Exists(SCENE_DIR)) Directory.CreateDirectory(SCENE_DIR);
             EditorSceneManager.SaveScene(scene, SCENE_PATH);
             Debug.Log($"[SceneGenerator] Saved Prototype Scene to {SCENE_PATH}");
@@ -347,6 +365,144 @@ namespace EchoOfTheVoid.Editor
             {
                 realmField.SetValue(enemy, realm);
             }
+        }
+
+        private static void CreateHUD(Sprite boxSprite)
+        {
+            GameObject canvasObj = new GameObject("Canvas_HUD");
+            Canvas canvas = canvasObj.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            var scaler = canvasObj.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920, 1080);
+            canvasObj.AddComponent<GraphicRaycaster>();
+
+            Font font = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/Orbitron-Variable.ttf")
+                     ?? Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+
+            // Panel Root
+            GameObject panel = new GameObject("HUD_Panel");
+            panel.transform.SetParent(canvasObj.transform, false);
+            RectTransform panelRect = panel.AddComponent<RectTransform>();
+            panelRect.anchorMin = new Vector2(0f, 1f);
+            panelRect.anchorMax = new Vector2(0f, 1f);
+            panelRect.pivot = new Vector2(0f, 1f);
+            panelRect.anchoredPosition = new Vector2(30f, -30f);
+            panelRect.sizeDelta = new Vector2(350f, 120f);
+
+            // Realm Indicator Text
+            GameObject realmTextObj = new GameObject("Text_Realm");
+            realmTextObj.transform.SetParent(panel.transform, false);
+            RectTransform realmRect = realmTextObj.AddComponent<RectTransform>();
+            realmRect.anchorMin = new Vector2(0f, 1f);
+            realmRect.anchorMax = new Vector2(0f, 1f);
+            realmRect.pivot = new Vector2(0f, 1f);
+            realmRect.anchoredPosition = new Vector2(0f, 0f);
+            realmRect.sizeDelta = new Vector2(300f, 30f);
+            Text realmText = realmTextObj.AddComponent<Text>();
+            realmText.font = font;
+            realmText.fontSize = 20;
+            realmText.fontStyle = FontStyle.Bold;
+            realmText.alignment = TextAnchor.MiddleLeft;
+            realmText.text = "REALM: PRIME";
+            realmText.color = new Color(0f, 0.85f, 1f, 1f);
+
+            // Health Bar Background
+            GameObject hpBgObj = new GameObject("HP_Background");
+            hpBgObj.transform.SetParent(panel.transform, false);
+            RectTransform hpBgRect = hpBgObj.AddComponent<RectTransform>();
+            hpBgRect.anchorMin = new Vector2(0f, 1f);
+            hpBgRect.anchorMax = new Vector2(0f, 1f);
+            hpBgRect.pivot = new Vector2(0f, 1f);
+            hpBgRect.anchoredPosition = new Vector2(0f, -32f);
+            hpBgRect.sizeDelta = new Vector2(240f, 18f);
+            Image hpBg = hpBgObj.AddComponent<Image>();
+            hpBg.sprite = boxSprite;
+            hpBg.color = new Color(0.1f, 0.1f, 0.12f, 0.85f);
+
+            // Health Bar Fill
+            GameObject hpFillObj = new GameObject("HP_Fill");
+            hpFillObj.transform.SetParent(hpBgObj.transform, false);
+            RectTransform hpFillRect = hpFillObj.AddComponent<RectTransform>();
+            hpFillRect.anchorMin = Vector2.zero;
+            hpFillRect.anchorMax = Vector2.one;
+            hpFillRect.sizeDelta = Vector2.zero;
+            Image hpFill = hpFillObj.AddComponent<Image>();
+            hpFill.sprite = boxSprite;
+            hpFill.type = Image.Type.Filled;
+            hpFill.fillMethod = Image.FillMethod.Horizontal;
+            hpFill.color = new Color(0.18f, 0.8f, 0.44f, 1f); // Emerald Green
+
+            // Energy Bar Background
+            GameObject ceBgObj = new GameObject("CE_Background");
+            ceBgObj.transform.SetParent(panel.transform, false);
+            RectTransform ceBgRect = ceBgObj.AddComponent<RectTransform>();
+            ceBgRect.anchorMin = new Vector2(0f, 1f);
+            ceBgRect.anchorMax = new Vector2(0f, 1f);
+            ceBgRect.pivot = new Vector2(0f, 1f);
+            ceBgRect.anchoredPosition = new Vector2(0f, -54f);
+            ceBgRect.sizeDelta = new Vector2(240f, 14f);
+            Image ceBg = ceBgObj.AddComponent<Image>();
+            ceBg.sprite = boxSprite;
+            ceBg.color = new Color(0.1f, 0.1f, 0.12f, 0.85f);
+
+            // Energy Bar Fill
+            GameObject ceFillObj = new GameObject("CE_Fill");
+            ceFillObj.transform.SetParent(ceBgObj.transform, false);
+            RectTransform ceFillRect = ceFillObj.AddComponent<RectTransform>();
+            ceFillRect.anchorMin = Vector2.zero;
+            ceFillRect.anchorMax = Vector2.one;
+            ceFillRect.sizeDelta = Vector2.zero;
+            Image ceFill = ceFillObj.AddComponent<Image>();
+            ceFill.sprite = boxSprite;
+            ceFill.type = Image.Type.Filled;
+            ceFill.fillMethod = Image.FillMethod.Horizontal;
+            ceFill.color = new Color(0.95f, 0.77f, 0.06f, 1f); // Amber Gold
+
+            // Dash Indicator
+            GameObject dashObj = new GameObject("Dash_Indicator");
+            dashObj.transform.SetParent(panel.transform, false);
+            RectTransform dashRect = dashObj.AddComponent<RectTransform>();
+            dashRect.anchorMin = new Vector2(0f, 1f);
+            dashRect.anchorMax = new Vector2(0f, 1f);
+            dashRect.pivot = new Vector2(0f, 1f);
+            dashRect.anchoredPosition = new Vector2(252f, -32f);
+            dashRect.sizeDelta = new Vector2(36f, 36f);
+            Image dashBg = dashObj.AddComponent<Image>();
+            dashBg.sprite = boxSprite;
+            dashBg.color = new Color(0.2f, 0.25f, 0.32f, 0.9f);
+
+            GameObject dashFillObj = new GameObject("Dash_CooldownOverlay");
+            dashFillObj.transform.SetParent(dashObj.transform, false);
+            RectTransform dashFillRect = dashFillObj.AddComponent<RectTransform>();
+            dashFillRect.anchorMin = Vector2.zero;
+            dashFillRect.anchorMax = Vector2.one;
+            dashFillRect.sizeDelta = Vector2.zero;
+            Image dashFill = dashFillObj.AddComponent<Image>();
+            dashFill.sprite = boxSprite;
+            dashFill.type = Image.Type.Filled;
+            dashFill.fillMethod = Image.FillMethod.Radial360;
+            dashFill.color = new Color(0f, 0f, 0f, 0.75f);
+
+            // Controls Guide (Bottom Center)
+            GameObject guideObj = new GameObject("Controls_Guide");
+            guideObj.transform.SetParent(canvasObj.transform, false);
+            RectTransform guideRect = guideObj.AddComponent<RectTransform>();
+            guideRect.anchorMin = new Vector2(0.5f, 0f);
+            guideRect.anchorMax = new Vector2(0.5f, 0f);
+            guideRect.pivot = new Vector2(0.5f, 0f);
+            guideRect.anchoredPosition = new Vector2(0f, 25f);
+            guideRect.sizeDelta = new Vector2(1000f, 35f);
+            Text guideText = guideObj.AddComponent<Text>();
+            guideText.font = font;
+            guideText.fontSize = 15;
+            guideText.alignment = TextAnchor.MiddleCenter;
+            guideText.color = new Color(0.85f, 0.9f, 0.95f, 0.85f);
+            guideText.text = "[A / D] Di Chuyển  |  [SPACE] Nhảy  |  [K] Dash  |  [J] Chém (Combo 3)  |  [SHIFT] Reality Shift  |  [U] Resonance";
+
+            // Attach PlayerHUD component
+            var hud = canvasObj.AddComponent<PlayerHUD>();
+            hud.BindElements(hpFill, ceFill, dashFill, realmText, null);
         }
 
         private static void ConfigureBuildSettings(string mainScenePath)
