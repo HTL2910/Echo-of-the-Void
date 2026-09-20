@@ -25,6 +25,7 @@ namespace EchoOfTheVoid.Player
                 f.AttackPressed |= kb.jKey.wasPressedThisFrame || kb.zKey.wasPressedThisFrame;
                 f.DashPressed |= kb.kKey.wasPressedThisFrame || kb.leftCtrlKey.wasPressedThisFrame;
                 f.ResonancePressed |= kb.uKey.wasPressedThisFrame || kb.lKey.wasPressedThisFrame;
+                f.InteractPressed |= kb.eKey.wasPressedThisFrame;
             }
 
             var pad = Gamepad.current;
@@ -37,8 +38,9 @@ namespace EchoOfTheVoid.Player
                 f.JumpReleased |= pad.buttonSouth.wasReleasedThisFrame;
                 f.ShiftPressed |= pad.rightShoulder.wasPressedThisFrame;                                   // RB
                 f.AttackPressed |= pad.buttonWest.wasPressedThisFrame;                                      // X
-                f.DashPressed |= pad.buttonEast.wasPressedThisFrame || pad.rightTrigger.wasPressedThisFrame; // B / RT
-                f.ResonancePressed |= pad.buttonNorth.wasPressedThisFrame;                                  // Y
+                f.DashPressed |= pad.buttonEast.wasPressedThisFrame;                                        // B
+                f.ResonancePressed |= pad.rightTrigger.wasPressedThisFrame;                                 // RT (spec 2.3)
+                f.InteractPressed |= pad.buttonNorth.wasPressedThisFrame;                                   // Y
             }
 #else
             f.Move = Input.GetAxisRaw("Horizontal");
@@ -48,6 +50,7 @@ namespace EchoOfTheVoid.Player
             f.AttackPressed = Input.GetKeyDown(KeyCode.J) || Input.GetKeyDown(KeyCode.Z);
             f.DashPressed = Input.GetKeyDown(KeyCode.K) || Input.GetKeyDown(KeyCode.LeftControl);
             f.ResonancePressed = Input.GetKeyDown(KeyCode.U) || Input.GetKeyDown(KeyCode.L);
+            f.InteractPressed = Input.GetKeyDown(KeyCode.E);
 #endif
             f.Move = Mathf.Clamp(f.Move, -1f, 1f);
             return f;

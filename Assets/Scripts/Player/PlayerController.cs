@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
@@ -26,6 +27,7 @@ namespace EchoOfTheVoid.Player
         [Header("Wall Jump Metrics (GDD & Master Spec)")]
         [SerializeField] private float wallJumpHorizontalSpeed = 11f;
         [SerializeField] private float wallJumpVerticalSpeed = 16f;
+        [SerializeField] private float wallJumpInputLock = 0.12f; // spec 3.2: keeps the kick from being cancelled at once
 
         [Header("Dash Metrics (GDD & Master Spec)")]
         [SerializeField] private float dashSpeed = 20f; // Spec: 4 tiles / 0.2s = 20 units/s
@@ -44,6 +46,7 @@ namespace EchoOfTheVoid.Player
         private GhostTrail _ghostTrail;
         private PlayerCombat _combat;
         private PlayerStats _stats;
+        private AbilitySet _abilities;
 
         // Kinematics parameters
         private float _jumpVelocity;
@@ -66,6 +69,7 @@ namespace EchoOfTheVoid.Player
         private float _dashCooldownTimer;
         private bool _canDash = true;
         private float _freezeVerticalTimer;
+        private float _wallJumpLockTimer;
 
         public float HorizontalInput => _horizontalInput;
         public float FacingDirection => _facingDirection;
@@ -77,6 +81,10 @@ namespace EchoOfTheVoid.Player
         public bool IsAttacking => (_combat != null && _combat.IsAttacking);
         public string CurrentStateName => _stateMachine?.CurrentState?.GetType().Name ?? "None";
         public float DashCooldownTimer => _dashCooldownTimer;
+        public bool InteractPressed => _frame.InteractPressed;
+
+        public event Action Jumped;
+        public event Action Dashed;
 
         private void Awake()
         {
@@ -87,6 +95,7 @@ namespace EchoOfTheVoid.Player
             _ghostTrail = GetComponent<GhostTrail>();
             _combat = GetComponent<PlayerCombat>();
             _stats = GetComponent<PlayerStats>();
+            _abilities = GetComponent<AbilitySet>();
 
             // Setup Ground layer mask: Neutral (6), PrimeSolid (7), EchoSolid (8)
             if (groundLayer.value == 0 || groundLayer.value == ~0)
@@ -161,9 +170,9 @@ namespace EchoOfTheVoid.Player
             }
 
             // Reality Shift
-            if (shiftPressed && RealityManager.Instance != null)
+            if (shiftPressed && RealityManager.Instance != null && HasAbility(AbilityFlags.RealityShift))
             {
-                RealityManager.Instance.ToggleRealm();
+                RealityManager.Instance.TryToggleRealm(_collider.bounds);
             }
 
             // Attacks
@@ -182,6 +191,7 @@ namespace EchoOfTheVoid.Player
             if (_coyoteTimer > 0f) _coyoteTimer -= Time.deltaTime;
             if (_jumpBufferTimer > 0f) _jumpBufferTimer -= Time.deltaTime;
             if (_freezeVerticalTimer > 0f) _freezeVerticalTimer -= Time.deltaTime;
+            if (_wallJumpLockTimer > 0f) _wallJumpLockTimer -= Time.deltaTime;
             if (_dashCooldownTimer > 0f)
             {
                 _dashCooldownTimer -= Time.deltaTime;
@@ -242,9 +252,13 @@ namespace EchoOfTheVoid.Player
             _stateMachine.ChangeState(newState);
         }
 
+        /// <summary>Without an AbilitySet component everything is allowed (keeps old prefabs and tests working).</summary>
+        public bool HasAbility(AbilityFlags ability) => _abilities == null || _abilities.Has(ability);
+
         public bool CheckAndConsumeJump()
         {
-            if (_jumpBufferTimer > 0f && (_coyoteTimer > 0f || _isTouchingWall))
+            bool canWallJump = _isTouchingWall && HasAbility(AbilityFlags.WallJump);
+            if (_jumpBufferTimer > 0f && (_coyoteTimer > 0f || canWallJump))
             {
                 _jumpBufferTimer = 0f;
                 _coyoteTimer = 0f;
@@ -256,7 +270,7 @@ namespace EchoOfTheVoid.Player
         public bool CheckAndConsumeDash()
         {
             bool dashInput = _frame.DashPressed;
-            if (dashInput && _canDash && _dashCooldownTimer <= 0f)
+            if (dashInput && _canDash && _dashCooldownTimer <= 0f && HasAbility(AbilityFlags.PhaseDash))
             {
                 _canDash = false;
                 _dashCooldownTimer = dashCooldown;
@@ -278,6 +292,8 @@ namespace EchoOfTheVoid.Player
 
         public void ApplyHorizontalMovement()
         {
+            if (_wallJumpLockTimer > 0f) return; // keep the wall-jump kick
+
             float targetSpeed = _horizontalInput * maxSpeed;
             float accelRate = (Mathf.Abs(targetSpeed) > 0.01f) ? (maxSpeed / timeToMaxSpeed) : (maxSpeed / timeToStop);
 
@@ -310,6 +326,7 @@ namespace EchoOfTheVoid.Player
             _rb.linearVelocity = new Vector2(_rb.linearVelocity.x, _jumpVelocity);
             if (_squash != null) _squash.OnJump();
             if (AudioManager.Instance != null) AudioManager.Instance.PlayJump();
+            Jumped?.Invoke();
         }
 
         public void ExecuteWallJump()
@@ -317,9 +334,11 @@ namespace EchoOfTheVoid.Player
             float launchX = -_wallDirection * wallJumpHorizontalSpeed;
             _rb.linearVelocity = new Vector2(launchX, wallJumpVerticalSpeed);
             _facingDirection = -_wallDirection;
+            _wallJumpLockTimer = wallJumpInputLock;
             if (_renderer != null) _renderer.flipX = (_facingDirection < 0f);
             if (_squash != null) _squash.OnJump();
             if (AudioManager.Instance != null) AudioManager.Instance.PlayJump();
+            Jumped?.Invoke();
         }
 
         public void StartDash()
@@ -328,6 +347,7 @@ namespace EchoOfTheVoid.Player
             _rb.linearVelocity = new Vector2(_facingDirection * dashSpeed, 0f);
             if (_squash != null) _squash.OnDash();
             if (AudioManager.Instance != null) AudioManager.Instance.PlayDash();
+            Dashed?.Invoke();
 
             RealmType realm = (RealityManager.Instance != null) ? RealityManager.Instance.CurrentRealm : RealmType.Prime;
             if (_ghostTrail != null) _ghostTrail.StartTrail(realm);
@@ -342,6 +362,10 @@ namespace EchoOfTheVoid.Player
         {
             if (_stats != null) _stats.SetInvulnerable(false);
             if (_ghostTrail != null) _ghostTrail.StopTrail();
+
+            // Dash speed (20) exceeds run speed (12): drop back to run speed so the dash covers exactly its 4 tiles
+            Vector2 vel = _rb.linearVelocity;
+            _rb.linearVelocity = new Vector2(Mathf.Clamp(vel.x, -maxSpeed, maxSpeed), vel.y);
         }
 
         public void SetVelocity(Vector2 velocity)

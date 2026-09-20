@@ -10,6 +10,7 @@ namespace EchoOfTheVoid.Player
         public bool ShiftPressed;     // Reality Shift
         public bool AttackPressed;
         public bool ResonancePressed;
+        public bool InteractPressed;  // Trạm Chrono, monolith...
     }
 
     /// <summary>

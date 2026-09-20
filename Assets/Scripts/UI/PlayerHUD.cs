@@ -35,6 +35,7 @@ namespace EchoOfTheVoid.UI
         {
             FindPlayerAndBind();
             RealityEventBus.OnRealmSwitched += UpdateRealmIndicator;
+            RealityEventBus.OnShiftDenied += ShowShiftDenied;
 
             if (RealityManager.Instance != null)
             {
@@ -50,6 +51,12 @@ namespace EchoOfTheVoid.UI
                 _playerStats.OnEnergyChanged -= UpdateEnergyBar;
             }
             RealityEventBus.OnRealmSwitched -= UpdateRealmIndicator;
+            RealityEventBus.OnShiftDenied -= ShowShiftDenied;
+        }
+
+        private void ShowShiftDenied()
+        {
+            ShowAnnouncement("SHIFT BLOCKED", 0.8f);
         }
 
         private void Update()

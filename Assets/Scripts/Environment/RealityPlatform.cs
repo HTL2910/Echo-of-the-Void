@@ -4,7 +4,7 @@ using EchoOfTheVoid.Core;
 namespace EchoOfTheVoid.Environment
 {
     [RequireComponent(typeof(Collider2D))]
-    public class RealityPlatform : MonoBehaviour
+    public class RealityPlatform : MonoBehaviour, IRealityObstacle
     {
         [Header("Realm Configuration")]
         [SerializeField] private RealmType solidInRealm;
@@ -15,6 +15,29 @@ namespace EchoOfTheVoid.Environment
         private SpriteRenderer _renderer;
 
         public RealmType SolidInRealm => solidInRealm;
+
+        /// <summary>World-space box of this platform, valid even while its collider is switched off.</summary>
+        public Bounds WorldBounds
+        {
+            get
+            {
+                if (_collider == null) _collider = GetComponent<Collider2D>();
+                if (_collider.enabled) return _collider.bounds;
+
+                if (_collider is BoxCollider2D box)
+                {
+                    Vector3 center = transform.TransformPoint(box.offset);
+                    Vector3 size = Vector3.Scale(box.size, transform.lossyScale);
+                    return new Bounds(center, new Vector3(Mathf.Abs(size.x), Mathf.Abs(size.y), 1f));
+                }
+                return (_renderer != null) ? _renderer.bounds : _collider.bounds;
+            }
+        }
+
+        public bool Overlaps(Bounds worldBounds) => WorldBounds.Intersects(worldBounds);
+
+        private void OnEnable() => RealityObstacles.Register(this);
+        private void OnDisable() => RealityObstacles.Unregister(this);
 
         public void Configure(RealmType realm, Color baseColor)
         {

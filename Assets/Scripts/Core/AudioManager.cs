@@ -14,12 +14,26 @@ namespace EchoOfTheVoid.Core
         [SerializeField] private AudioClip shiftClip;
         [SerializeField] private AudioClip jumpClip;
         [SerializeField] private AudioClip resonanceClip;
+        [SerializeField] private AudioClip shiftDeniedClip;
 
         [Header("Audio Pool Settings")]
         [SerializeField] private int poolSize = 8;
 
         private List<AudioSource> _sourcesPool;
         private int _poolIndex = 0;
+
+        private void OnEnable() => RealityEventBus.OnShiftDenied += PlayShiftDenied;
+        private void OnDisable() => RealityEventBus.OnShiftDenied -= PlayShiftDenied;
+
+        public void PlayShiftDenied()
+        {
+            PlaySound(shiftDeniedClip, 0.7f, 0.02f);
+        }
+
+        public void ConfigureShiftDenied(AudioClip clip)
+        {
+            shiftDeniedClip = clip;
+        }
 
         private void Awake()
         {

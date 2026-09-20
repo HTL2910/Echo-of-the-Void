@@ -105,6 +105,7 @@ namespace EchoOfTheVoid.Player
         public bool TryResonanceStrike()
         {
             if (_isAttacking) return false;
+            if (_controller != null && !_controller.HasAbility(AbilityFlags.ResonanceStrike)) return false;
             if (_stats != null && !_stats.ConsumeEnergy(resonanceCost))
             {
                 return false;

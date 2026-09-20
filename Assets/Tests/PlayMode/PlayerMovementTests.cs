@@ -14,30 +14,6 @@ namespace EchoOfTheVoid.Tests
     /// </summary>
     public class PlayerMovementTests
     {
-        /// <summary>Scriptable input: edge flags fire for exactly one frame, Move is held.</summary>
-        private class FakeInput : IPlayerInput
-        {
-            public float Move;
-            private bool _jump, _jumpReleased, _dash;
-
-            public void PressJump() => _jump = true;
-            public void ReleaseJump() => _jumpReleased = true;
-            public void PressDash() => _dash = true;
-
-            public PlayerInputFrame Poll()
-            {
-                var frame = new PlayerInputFrame
-                {
-                    Move = Move,
-                    JumpPressed = _jump,
-                    JumpReleased = _jumpReleased,
-                    DashPressed = _dash
-                };
-                _jump = _jumpReleased = _dash = false;
-                return frame;
-            }
-        }
-
         private const float FloorTop = 0f;
 
         private FakeInput _input;

@@ -3,6 +3,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
+using UnityEngine.Tilemaps;
 using UnityEngine.UI;
 using EchoOfTheVoid.Core;
 using EchoOfTheVoid.Combat;
@@ -95,6 +96,7 @@ namespace EchoOfTheVoid.Editor
             AudioClip jumpClip = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/SFX/SciFiSounds/Audio/spaceEngineSmall_001.ogg");
             AudioClip resClip = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/SFX/SciFiSounds/Audio/laserLarge_000.ogg");
             audioMgr.ConfigureClips(slashes, hitClip, dashClip, shiftClip, jumpClip, resClip);
+            audioMgr.ConfigureShiftDenied(AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/SFX/InterfaceSounds/Audio/error_001.ogg"));
 
             // 7. Setup Player
             GameObject playerObj = new GameObject("Player");
@@ -121,6 +123,8 @@ namespace EchoOfTheVoid.Editor
             playerObj.AddComponent<GhostTrail>();
             playerObj.AddComponent<PlayerStats>();
             playerObj.AddComponent<PlayerRespawn>();
+            playerObj.AddComponent<PlayerAnimationDriver>();
+            playerObj.AddComponent<AbilitySet>();
             var combat = playerObj.AddComponent<PlayerCombat>();
             combat.SetSlashSprite(slashSprite);
             combat.SetEnemyLayer(1 << enemyLayer);
@@ -130,10 +134,13 @@ namespace EchoOfTheVoid.Editor
             playerCtrl.SetGroundLayer((1 << neutralLayer) | (1 << primeLayer) | (1 << echoLayer));
 
             // Player becomes a prefab (reused on later runs so artist edits survive)
-            playerObj = SaveOrReusePrefab(playerObj, "Player", "Player");
+            playerObj = SaveOrReusePrefab(playerObj, "Player", "Player",
+                typeof(PlayerAnimationDriver), typeof(AbilitySet));
 
             // Wire camera target directly
             camFollow.SetTarget(playerObj.transform);
+
+            CreateRoomTemplate();
 
             // 8. Build Environment (Level 1-1 Sandbox)
             GameObject levelRoot = new GameObject("Environment");
@@ -164,6 +171,17 @@ namespace EchoOfTheVoid.Editor
             CreateRealityPlatform(levelRoot.transform, "Platform_Prime_Final", new Vector3(14.5f, 6.8f, 0f), new Vector3(4.5f, 0.6f, 1f), RealmType.Prime, primeColor, boxSprite, primeLayer);
             CreatePlatform(levelRoot.transform, "Goal_Altar", new Vector3(21f, 8.0f, 0f), new Vector3(6.5f, 0.8f, 1f), neutralColor, boxSprite, neutralLayer);
             CreateLevelGoal(levelRoot.transform, "Level_Goal_Rift", new Vector3(21f, 9.6f, 0f), boxSprite);
+
+            // Chrono Stations (checkpoint + save): start, before the combat arena, and the shaft reward ledge
+            CreateStation(levelRoot.transform, "Station_Start", new Vector3(-7.5f, -1.75f, 0f), boxSprite, "station_start");
+            CreateStation(levelRoot.transform, "Station_Arena", new Vector3(6.5f, -1.75f, 0f), boxSprite, "station_arena");
+            CreateStation(levelRoot.transform, "Station_ShaftTop", new Vector3(-20.5f, 9.9f, 0f), boxSprite, "station_shaft_top");
+
+            // Key items (spec 4): Wall Jump is locked until the Piston Boots; Resonance Strike until its core
+            CreatePickup(levelRoot.transform, "Pickup_PistonBoots", new Vector3(-10.5f, -0.9f, 0f), boxSprite,
+                AbilityFlags.WallJump, "PISTON BOOTS", new Color(1f, 0.8f, 0.2f, 1f));
+            CreatePickup(levelRoot.transform, "Pickup_ResonanceCore", new Vector3(8.5f, -0.9f, 0f), boxSprite,
+                AbilityFlags.ResonanceStrike, "RESONANCE CORE", new Color(0.95f, 0.4f, 0.9f, 1f));
 
             // 9. Combat Arena Section (Entities & Dummies)
             GameObject combatRoot = new GameObject("Combat_Entities");
@@ -346,6 +364,53 @@ namespace EchoOfTheVoid.Editor
             SaveOrReusePrefab(obj, "Enemy_" + name, "Enemies");
         }
 
+        /// <summary>
+        /// Prefab with a Grid and three ready-made tilemaps (Neutral / Prime / Echo) so artists only paint tiles.
+        /// Never overwrites an existing template.
+        /// </summary>
+        [MenuItem("Tools/Echo of the Void/Create Room Template Prefab")]
+        public static void CreateRoomTemplate()
+        {
+            const string path = PREFAB_DIR + "/Levels/Room_Template.prefab";
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(path) != null) return;
+            EnsureFolder(PREFAB_DIR + "/Levels");
+
+            var grid = new GameObject("Room_Template");
+            grid.AddComponent<Grid>().cellSize = Vector3.one; // 1 tile = 1 unit = 16 px
+
+            BuildTilemapLayer(grid.transform, "Tilemap_Neutral", "Neutral", 6, null, 0);
+            BuildTilemapLayer(grid.transform, "Tilemap_Prime", "PrimeSolid", 7, RealmType.Prime, 1);
+            BuildTilemapLayer(grid.transform, "Tilemap_Echo", "EchoSolid", 8, RealmType.Echo, 2);
+
+            PrefabUtility.SaveAsPrefabAsset(grid, path);
+            Object.DestroyImmediate(grid);
+            AssetDatabase.SaveAssets();
+            Debug.Log("[SceneGenerator] Created " + path);
+        }
+
+        private static void BuildTilemapLayer(Transform parent, string name, string layerName, int fallbackLayer,
+            RealmType? realm, int sortingOrder)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            go.layer = GetOrCreateLayer(layerName, fallbackLayer);
+
+            go.AddComponent<Tilemap>();
+            go.AddComponent<TilemapRenderer>().sortingOrder = sortingOrder;
+
+            var body = go.AddComponent<Rigidbody2D>();
+            body.bodyType = RigidbodyType2D.Static;
+
+            var tilemapCollider = go.AddComponent<TilemapCollider2D>();
+            tilemapCollider.compositeOperation = Collider2D.CompositeOperation.Merge;
+            go.AddComponent<CompositeCollider2D>();
+
+            if (realm.HasValue)
+            {
+                go.AddComponent<RealityTilemap>().Configure(realm.Value, Color.white);
+            }
+        }
+
         /// <summary>Adds a child "Visual" carrying the sprite, sized in world units (root keeps scale 1).</summary>
         private static SpriteRenderer AddVisual(GameObject root, Sprite sprite, Vector2 size, Color color)
         {
@@ -365,7 +430,8 @@ namespace EchoOfTheVoid.Editor
         /// Later runs: reuses the existing prefab so hand edits (sprites, animators) are kept.
         /// Returns the scene instance to use from now on.
         /// </summary>
-        private static GameObject SaveOrReusePrefab(GameObject built, string prefabName, string subFolder)
+        private static GameObject SaveOrReusePrefab(GameObject built, string prefabName, string subFolder,
+            params System.Type[] requiredComponents)
         {
             string dir = $"{PREFAB_DIR}/{subFolder}";
             EnsureFolder(dir);
@@ -386,6 +452,22 @@ namespace EchoOfTheVoid.Editor
             if (parent != null) instance.transform.SetParent(parent, false);
             instance.transform.position = position;
             instance.name = instanceName;
+
+            // Older prefabs may predate a code component: add what is missing and push it into the prefab asset
+            bool added = false;
+            foreach (var type in requiredComponents)
+            {
+                if (instance.GetComponent(type) == null)
+                {
+                    instance.AddComponent(type);
+                    added = true;
+                }
+            }
+            if (added)
+            {
+                PrefabUtility.ApplyPrefabInstance(instance, InteractionMode.AutomatedAction);
+                Debug.Log($"[SceneGenerator] Added missing components to prefab {prefabName}");
+            }
             return instance;
         }
 
@@ -566,6 +648,42 @@ namespace EchoOfTheVoid.Editor
             // Attach PlayerHUD component
             var hud = canvasObj.AddComponent<PlayerHUD>();
             hud.BindElements(hpFill, ceFill, dashFill, realmText, null, annText);
+        }
+
+        private static void CreatePickup(Transform parent, string name, Vector3 pos, Sprite sprite,
+            AbilityFlags ability, string displayName, Color color)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent);
+            go.transform.position = pos;
+            go.layer = GetOrCreateLayer("Interactable", 12);
+
+            var trigger = go.AddComponent<CircleCollider2D>();
+            trigger.isTrigger = true;
+            trigger.radius = 0.7f;
+
+            AddVisual(go, sprite, new Vector2(0.7f, 0.7f), color);
+            go.AddComponent<AbilityPickup>().Configure(ability, displayName);
+            SaveOrReusePrefab(go, "Pickup_" + ability, "Environment");
+        }
+
+        private static void CreateStation(Transform parent, string name, Vector3 floorPoint, Sprite sprite, string id)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent);
+            go.transform.position = floorPoint;
+            go.layer = GetOrCreateLayer("Interactable", 12);
+
+            var trigger = go.AddComponent<BoxCollider2D>();
+            trigger.isTrigger = true;
+            trigger.size = new Vector2(3f, 2.5f);
+            trigger.offset = new Vector2(0f, 1.25f);
+
+            var visual = AddVisual(go, sprite, new Vector2(0.8f, 2f), new Color(0.3f, 0.9f, 0.8f, 0.6f));
+            visual.transform.localPosition = new Vector3(0f, 1f, 0f);
+
+            go.AddComponent<ChronoStation>().Configure(id, 25);
+            SaveOrReusePrefab(go, "Station_Chrono_" + id, "Environment");
         }
 
         private static void CreateLevelGoal(Transform parent, string name, Vector3 pos, Sprite sprite)
