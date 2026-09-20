@@ -21,7 +21,10 @@ namespace EchoOfTheVoid.Player
         [SerializeField] private int resonanceCost = 50;
 
         [Header("Layer Setup")]
-        [SerializeField] private LayerMask enemyLayer = ~0;
+        [SerializeField] private LayerMask enemyLayer;
+
+        [Header("Visuals")]
+        [SerializeField] private Sprite slashSprite;
 
         private PlayerController _controller;
         private PlayerStats _stats;
@@ -41,6 +44,34 @@ namespace EchoOfTheVoid.Player
         {
             _controller = GetComponent<PlayerController>();
             _stats = GetComponent<PlayerStats>();
+
+            // Layer mask: default to Enemy layer (Layer 10)
+            if (enemyLayer.value == 0 || enemyLayer.value == ~0)
+            {
+                int enemyLayerIndex = LayerMask.NameToLayer("Enemy");
+                enemyLayer = (enemyLayerIndex != -1) ? (1 << enemyLayerIndex) : (1 << 10);
+            }
+
+            EnsureSlashSprite();
+        }
+
+        private void EnsureSlashSprite()
+        {
+            if (slashSprite == null)
+            {
+                slashSprite = Resources.Load<Sprite>("SlashArc");
+            }
+#if UNITY_EDITOR
+            if (slashSprite == null)
+            {
+                slashSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/SlashArc.png");
+            }
+#endif
+            if (slashSprite == null)
+            {
+                var sr = GetComponentInChildren<SpriteRenderer>();
+                if (sr != null) slashSprite = sr.sprite;
+            }
         }
 
         private void Update()
@@ -91,15 +122,14 @@ namespace EchoOfTheVoid.Player
             int damage = (step == 1) ? combo1Damage : (step == 2) ? combo2Damage : combo3Damage;
             float knockbackMag = (step == 1) ? 2.5f : (step == 2) ? 4.5f : 8f;
 
-            // Attack forward point
             float dir = (_controller != null) ? _controller.FacingDirection : 1f;
             Vector2 attackCenter = (Vector2)transform.position + new Vector2(dir * (range * 0.5f), 0f);
             Vector2 attackSize = new Vector2(range, 1.6f);
 
-            // Visual swing effect
-            SpawnSlashVisual(attackCenter, attackSize, step == 3);
+            // Spawn visible slash visual
+            SpawnSlashVisual(attackCenter, attackSize, step == 3, dir);
 
-            PerformDamageCheck(attackCenter, attackSize, damage, new Vector2(dir * knockbackMag, 1.5f), isResonance: false, step == 3);
+            PerformDamageCheck(attackCenter, attackSize, damage, new Vector2(dir * knockbackMag, 1.5f), isResonance: false, isCombo3: (step == 3));
 
             float duration = (step == 3) ? 0.25f : 0.18f;
             yield return new WaitForSeconds(duration);
@@ -112,7 +142,6 @@ namespace EchoOfTheVoid.Player
             _lastAttackTime = Time.time;
             OnAttackPerformed?.Invoke(4);
 
-            // GDD: Air Slash freezes vertical velocity for 0.1s
             if (_controller != null)
             {
                 _controller.FreezeVerticalVelocityFor(0.1f);
@@ -122,8 +151,8 @@ namespace EchoOfTheVoid.Player
             Vector2 attackCenter = (Vector2)transform.position + new Vector2(dir * 1.0f, 0f);
             Vector2 attackSize = new Vector2(2.2f, 2.2f);
 
-            SpawnSlashVisual(attackCenter, attackSize, false);
-            PerformDamageCheck(attackCenter, attackSize, airSlashDamage, new Vector2(dir * 4f, 2f), isResonance: false, false);
+            SpawnSlashVisual(attackCenter, attackSize, false, dir);
+            PerformDamageCheck(attackCenter, attackSize, airSlashDamage, new Vector2(dir * 4f, 2f), isResonance: false, isCombo3: false);
 
             yield return new WaitForSeconds(0.20f);
             _isAttacking = false;
@@ -139,9 +168,8 @@ namespace EchoOfTheVoid.Player
             Vector2 attackCenter = (Vector2)transform.position + new Vector2(dir * 4.0f, 0f);
             Vector2 attackSize = new Vector2(8.0f, 2.5f);
 
-            SpawnResonanceWaveVisual(attackCenter, attackSize);
+            SpawnResonanceWaveVisual(attackCenter, attackSize, dir);
 
-            // GDD: Resonance Strike = Heavy shake + 0.14s hitstop
             if (CameraShakeManager.Instance != null) CameraShakeManager.Instance.ShakeHeavy();
             if (HitStopManager.Instance != null) HitStopManager.Instance.TriggerHitStop(0.14f, 0f);
 
@@ -158,8 +186,6 @@ namespace EchoOfTheVoid.Player
                 ? RealityManager.Instance.CurrentRealm 
                 : RealmType.Prime;
 
-            bool hitAny = false;
-
             foreach (var hit in hits)
             {
                 if (hit.gameObject == gameObject) continue;
@@ -170,11 +196,13 @@ namespace EchoOfTheVoid.Player
                     DamageInfo info = new DamageInfo(damage, hit.transform.position, knockback, currentRealm, isResonance, gameObject);
                     HitFeedback feedback = damageable.TakeDamage(info);
 
-                    hitAny = true;
                     OnEnemyHit?.Invoke(feedback.IsDeflected, feedback.DealtDamage);
 
                     // Restore +10 CE on hit
                     if (_stats != null) _stats.RestoreEnergy(10f);
+
+                    // Reset Dash cooldown on hitting enemy per GDD spec!
+                    if (_controller != null) _controller.ResetDashCooldown();
 
                     // Hitstop & Shake based on GDD
                     if (isCombo3)
@@ -191,29 +219,38 @@ namespace EchoOfTheVoid.Player
             }
         }
 
-        private void SpawnSlashVisual(Vector2 pos, Vector2 size, bool isFinisher)
+        private void SpawnSlashVisual(Vector2 pos, Vector2 size, bool isFinisher, float dir)
         {
+            EnsureSlashSprite();
+
             GameObject slashObj = new GameObject("Slash_Visual");
             slashObj.transform.position = pos;
-            slashObj.transform.localScale = size;
+            slashObj.transform.localScale = new Vector3(Mathf.Abs(size.x) * dir, size.y, 1f);
 
             var sr = slashObj.AddComponent<SpriteRenderer>();
-            sr.color = (RealityManager.Instance != null && RealityManager.Instance.CurrentRealm == RealmType.Echo)
-                ? new Color(0.85f, 0.2f, 1.0f, 0.8f) // Purple
-                : new Color(0.0f, 0.9f, 1.0f, 0.8f); // Cyan
+            sr.sprite = slashSprite;
+            sr.sortingOrder = 10; // Ensure visible in front of all entities
 
-            // Auto fade and destroy
-            StartCoroutine(FadeAndDestroy(slashObj, sr, 0.12f));
+            Color baseColor = (RealityManager.Instance != null && RealityManager.Instance.CurrentRealm == RealmType.Echo)
+                ? new Color(0.85f, 0.2f, 1.0f, 0.9f) // Purple for Echo
+                : new Color(0.0f, 0.9f, 1.0f, 0.9f); // Cyan for Prime
+
+            sr.color = baseColor;
+            StartCoroutine(FadeAndDestroy(slashObj, sr, 0.14f));
         }
 
-        private void SpawnResonanceWaveVisual(Vector2 pos, Vector2 size)
+        private void SpawnResonanceWaveVisual(Vector2 pos, Vector2 size, float dir)
         {
+            EnsureSlashSprite();
+
             GameObject waveObj = new GameObject("Resonance_Wave");
             waveObj.transform.position = pos;
-            waveObj.transform.localScale = size;
+            waveObj.transform.localScale = new Vector3(Mathf.Abs(size.x) * dir, size.y, 1f);
 
             var sr = waveObj.AddComponent<SpriteRenderer>();
-            sr.color = new Color(1.0f, 0.85f, 0.2f, 0.85f); // Golden-Cyan Resonance
+            sr.sprite = slashSprite;
+            sr.sortingOrder = 10;
+            sr.color = new Color(1.0f, 0.85f, 0.2f, 0.95f); // Golden-Resonance
             StartCoroutine(FadeAndDestroy(waveObj, sr, 0.25f));
         }
 
@@ -232,12 +269,14 @@ namespace EchoOfTheVoid.Player
             if (obj != null) Destroy(obj);
         }
 
-        private void OnDrawGizmosSelected()
+        public void SetEnemyLayer(LayerMask mask)
         {
-            Gizmos.color = Color.yellow;
-            float dir = (_controller != null) ? _controller.FacingDirection : 1f;
-            Vector2 attackCenter = (Vector2)transform.position + new Vector2(dir * (combo1Range * 0.5f), 0f);
-            Gizmos.DrawWireCube(attackCenter, new Vector2(combo1Range, 1.6f));
+            enemyLayer = mask;
+        }
+
+        public void SetSlashSprite(Sprite sprite)
+        {
+            slashSprite = sprite;
         }
     }
 }

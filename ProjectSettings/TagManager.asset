@@ -11,15 +11,15 @@ TagManager:
   - 
   - Water
   - UI
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
+  - Neutral
+  - PrimeSolid
+  - EchoSolid
+  - Player
+  - Enemy
+  - Hazard
+  - Interactable
+  - PlayerHitbox
+  - EnemyHitbox
   - 
   - 
   - 

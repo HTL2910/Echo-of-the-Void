@@ -21,6 +21,18 @@ namespace EchoOfTheVoid.Enemies
         {
             base.Start();
             customRealm = RealmType.Prime;
+
+            if (groundLayer.value == 0 || groundLayer.value == ~0)
+            {
+                int neutralLayer = LayerMask.NameToLayer("Neutral");
+                int primeLayer = LayerMask.NameToLayer("PrimeSolid");
+                int mask = 0;
+                if (neutralLayer != -1) mask |= (1 << neutralLayer);
+                if (primeLayer != -1) mask |= (1 << primeLayer);
+                if (mask == 0) mask = 1;
+                groundLayer = mask;
+            }
+
             var player = GameObject.FindGameObjectWithTag("Player");
             if (player != null) _playerTransform = player.transform;
         }

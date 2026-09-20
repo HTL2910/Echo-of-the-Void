@@ -11,28 +11,29 @@ namespace EchoOfTheVoid.Player
     [RequireComponent(typeof(Rigidbody2D), typeof(BoxCollider2D))]
     public class PlayerController : MonoBehaviour
     {
-        [Header("Movement Metrics (GDD)")]
+        [Header("Movement Metrics (GDD & Master Spec)")]
         [SerializeField] private float maxSpeed = 12f;
         [SerializeField] private float timeToMaxSpeed = 0.1f;
         [SerializeField] private float timeToStop = 0.08f;
 
-        [Header("Jump Metrics (GDD)")]
+        [Header("Jump Metrics (GDD & Master Spec)")]
         [SerializeField] private float jumpHeight = 3.5f;
         [SerializeField] private float timeToApex = 0.35f;
         [SerializeField] private float fallGravityMultiplier = 1.6f;
         [SerializeField] private float coyoteDuration = 0.1f;
         [SerializeField] private float jumpBufferDuration = 0.12f;
 
-        [Header("Wall Jump Metrics (GDD)")]
+        [Header("Wall Jump Metrics (GDD & Master Spec)")]
         [SerializeField] private float wallJumpHorizontalSpeed = 11f;
         [SerializeField] private float wallJumpVerticalSpeed = 16f;
 
-        [Header("Dash Metrics (GDD)")]
-        [SerializeField] private float dashSpeed = 24f;
+        [Header("Dash Metrics (GDD & Master Spec)")]
+        [SerializeField] private float dashSpeed = 20f; // Spec: 4 tiles / 0.2s = 20 units/s
         [SerializeField] private float dashDuration = 0.2f;
+        [SerializeField] private float dashCooldown = 0.8f; // Spec: 0.8s cooldown
 
         [Header("Collision Layers")]
-        [SerializeField] private LayerMask groundLayer = ~0;
+        [SerializeField] private LayerMask groundLayer;
         [SerializeField] private float groundCheckDistance = 0.08f;
         [SerializeField] private float wallCheckDistance = 0.15f;
 
@@ -59,7 +60,8 @@ namespace EchoOfTheVoid.Player
         private float _coyoteTimer;
         private float _jumpBufferTimer;
 
-        // Dash & Freeze timers
+        // Dash & Cooldown timers
+        private float _dashCooldownTimer;
         private bool _canDash = true;
         private float _freezeVerticalTimer;
 
@@ -72,6 +74,7 @@ namespace EchoOfTheVoid.Player
         public Vector2 LinearVelocity => _rb.linearVelocity;
         public bool IsAttacking => (_combat != null && _combat.IsAttacking);
         public string CurrentStateName => _stateMachine?.CurrentState?.GetType().Name ?? "None";
+        public float DashCooldownTimer => _dashCooldownTimer;
 
         private void Awake()
         {
@@ -82,6 +85,21 @@ namespace EchoOfTheVoid.Player
             _ghostTrail = GetComponent<GhostTrail>();
             _combat = GetComponent<PlayerCombat>();
             _stats = GetComponent<PlayerStats>();
+
+            // Setup Ground layer mask: Neutral (6), PrimeSolid (7), EchoSolid (8)
+            if (groundLayer.value == 0 || groundLayer.value == ~0)
+            {
+                int neutralLayer = LayerMask.NameToLayer("Neutral");
+                int primeLayer = LayerMask.NameToLayer("PrimeSolid");
+                int echoLayer = LayerMask.NameToLayer("EchoSolid");
+
+                int mask = 0;
+                if (neutralLayer != -1) mask |= (1 << neutralLayer);
+                if (primeLayer != -1) mask |= (1 << primeLayer);
+                if (echoLayer != -1) mask |= (1 << echoLayer);
+                if (mask == 0) mask = 1; // Default layer fallback if custom layers not yet loaded
+                groundLayer = mask;
+            }
 
             // Calculate kinematic parameters
             _jumpVelocity = (2f * jumpHeight) / timeToApex;
@@ -112,7 +130,7 @@ namespace EchoOfTheVoid.Player
         {
             float moveX = 0f;
             bool jumpPressed = false;
-            bool dashPressed = false;
+            bool jumpReleased = false;
             bool shiftPressed = false;
             bool attackPressed = false;
             bool resonancePressed = false;
@@ -124,10 +142,13 @@ namespace EchoOfTheVoid.Player
                 if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed) moveX += 1f;
 
                 if (Keyboard.current.spaceKey.wasPressedThisFrame || Keyboard.current.wKey.wasPressedThisFrame) jumpPressed = true;
-                if (Keyboard.current.leftShiftKey.wasPressedThisFrame || Keyboard.current.eKey.wasPressedThisFrame) shiftPressed = true;
+                if (Keyboard.current.spaceKey.wasReleasedThisFrame || Keyboard.current.wKey.wasReleasedThisFrame) jumpReleased = true;
+
+                // SPEC: Reality Shift is LeftShift ONLY! Key E is reserved for Interaction (D10).
+                if (Keyboard.current.leftShiftKey.wasPressedThisFrame || Keyboard.current.rightShiftKey.wasPressedThisFrame) shiftPressed = true;
+
                 if (Keyboard.current.jKey.wasPressedThisFrame || Keyboard.current.zKey.wasPressedThisFrame) attackPressed = true;
-                if (Keyboard.current.kKey.wasPressedThisFrame || Keyboard.current.leftCtrlKey.wasPressedThisFrame) dashPressed = true;
-                if (Keyboard.current.lKey.wasPressedThisFrame || Keyboard.current.uKey.wasPressedThisFrame) resonancePressed = true;
+                if (Keyboard.current.uKey.wasPressedThisFrame || Keyboard.current.lKey.wasPressedThisFrame) resonancePressed = true;
             }
 
             if (Gamepad.current != null)
@@ -136,18 +157,18 @@ namespace EchoOfTheVoid.Player
                 if (Mathf.Abs(stickX) > 0.15f) moveX = stickX;
 
                 if (Gamepad.current.buttonSouth.wasPressedThisFrame) jumpPressed = true;
-                if (Gamepad.current.rightShoulder.wasPressedThisFrame) shiftPressed = true;
-                if (Gamepad.current.buttonWest.wasPressedThisFrame) attackPressed = true;
-                if (Gamepad.current.rightTrigger.wasPressedThisFrame) dashPressed = true;
-                if (Gamepad.current.buttonNorth.wasPressedThisFrame) resonancePressed = true;
+                if (Gamepad.current.buttonSouth.wasReleasedThisFrame) jumpReleased = true;
+                if (Gamepad.current.rightShoulder.wasPressedThisFrame) shiftPressed = true; // RB
+                if (Gamepad.current.buttonWest.wasPressedThisFrame) attackPressed = true;     // X
+                if (Gamepad.current.buttonNorth.wasPressedThisFrame) resonancePressed = true; // Y
             }
 #else
             moveX = Input.GetAxisRaw("Horizontal");
             if (Input.GetButtonDown("Jump") || Input.GetKeyDown(KeyCode.Space)) jumpPressed = true;
-            if (Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown(KeyCode.E)) shiftPressed = true;
+            if (Input.GetButtonUp("Jump") || Input.GetKeyUp(KeyCode.Space)) jumpReleased = true;
+            if (Input.GetKeyDown(KeyCode.LeftShift)) shiftPressed = true;
             if (Input.GetKeyDown(KeyCode.J) || Input.GetKeyDown(KeyCode.Z)) attackPressed = true;
-            if (Input.GetKeyDown(KeyCode.K) || Input.GetKeyDown(KeyCode.LeftControl)) dashPressed = true;
-            if (Input.GetKeyDown(KeyCode.L) || Input.GetKeyDown(KeyCode.U)) resonancePressed = true;
+            if (Input.GetKeyDown(KeyCode.U) || Input.GetKeyDown(KeyCode.L)) resonancePressed = true;
 #endif
 
             _horizontalInput = Mathf.Clamp(moveX, -1f, 1f);
@@ -164,7 +185,12 @@ namespace EchoOfTheVoid.Player
             }
 
             if (jumpPressed) _jumpBufferTimer = jumpBufferDuration;
-            if (dashPressed && _canDash) _jumpBufferTimer = 0f; // prioritize dash
+
+            // Variable Jump: cut vertical speed when jump button is released early
+            if (jumpReleased && _rb.linearVelocity.y > 0f)
+            {
+                _rb.linearVelocity = new Vector2(_rb.linearVelocity.x, _rb.linearVelocity.y * 0.5f);
+            }
 
             // Reality Shift
             if (shiftPressed && RealityManager.Instance != null)
@@ -188,6 +214,11 @@ namespace EchoOfTheVoid.Player
             if (_coyoteTimer > 0f) _coyoteTimer -= Time.deltaTime;
             if (_jumpBufferTimer > 0f) _jumpBufferTimer -= Time.deltaTime;
             if (_freezeVerticalTimer > 0f) _freezeVerticalTimer -= Time.deltaTime;
+            if (_dashCooldownTimer > 0f)
+            {
+                _dashCooldownTimer -= Time.deltaTime;
+                if (_dashCooldownTimer <= 0f) _canDash = true;
+            }
         }
 
         private void CheckEnvironment()
@@ -197,13 +228,13 @@ namespace EchoOfTheVoid.Player
             Vector2 size = new Vector2(_collider.size.x * 0.85f, groundCheckDistance);
 
             RaycastHit2D hit = Physics2D.BoxCast(origin, size, 0f, Vector2.down, groundCheckDistance, groundLayer);
-            bool wasGrounded = _isGrounded;
             _isGrounded = hit.collider != null && hit.collider.gameObject != gameObject;
 
             if (_isGrounded)
             {
                 _coyoteTimer = coyoteDuration;
-                _canDash = true; // reset dash on landing
+                // Spec: Reset dash immediately upon landing
+                ResetDashCooldown();
             }
 
             // Wall Check
@@ -253,16 +284,23 @@ namespace EchoOfTheVoid.Player
         {
 #if ENABLE_INPUT_SYSTEM
             bool dashInput = (Keyboard.current != null && (Keyboard.current.kKey.wasPressedThisFrame || Keyboard.current.leftCtrlKey.wasPressedThisFrame))
-                          || (Gamepad.current != null && Gamepad.current.rightTrigger.wasPressedThisFrame);
+                          || (Gamepad.current != null && (Gamepad.current.buttonEast.wasPressedThisFrame || Gamepad.current.rightTrigger.wasPressedThisFrame));
 #else
             bool dashInput = Input.GetKeyDown(KeyCode.K) || Input.GetKeyDown(KeyCode.LeftControl);
 #endif
-            if (dashInput && _canDash)
+            if (dashInput && _canDash && _dashCooldownTimer <= 0f)
             {
                 _canDash = false;
+                _dashCooldownTimer = dashCooldown;
                 return true;
             }
             return false;
+        }
+
+        public void ResetDashCooldown()
+        {
+            _dashCooldownTimer = 0f;
+            _canDash = true;
         }
 
         public bool CheckAndConsumeAttack()
@@ -307,7 +345,6 @@ namespace EchoOfTheVoid.Player
 
         public void ExecuteWallJump()
         {
-            // Jump away from the wall
             float launchX = -_wallDirection * wallJumpHorizontalSpeed;
             _rb.linearVelocity = new Vector2(launchX, wallJumpVerticalSpeed);
             _facingDirection = -_wallDirection;
@@ -360,6 +397,11 @@ namespace EchoOfTheVoid.Player
         public void TriggerSquashLand()
         {
             if (_squash != null) _squash.OnLand();
+        }
+
+        public void SetGroundLayer(LayerMask mask)
+        {
+            groundLayer = mask;
         }
     }
 }
