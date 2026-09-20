@@ -138,8 +138,23 @@ namespace EchoOfTheVoid.Editor
             // GDD metrics: 14px x 26px (~0.875 x 1.625). Root keeps scale 1 so the collider is in real units.
             col.size = new Vector2(0.875f, 1.625f);
 
-            // Sprite lives on a child so artists can swap it / add an Animator without touching physics
-            AddVisual(playerObj, boxSprite, new Vector2(0.875f, 1.625f), new Color(0.95f, 0.95f, 0.95f, 1f));
+            // Sprite and Animator live on Visual child
+            Sprite kaelSprite = LoadSprite("Assets/Art/Sprites/Kael/spr_kael_idle_0.png") ?? boxSprite;
+            var visual = new GameObject("Visual");
+            visual.transform.SetParent(playerObj.transform, false);
+            visual.transform.localScale = Vector3.one;
+            visual.layer = playerLayer;
+
+            var sr = visual.AddComponent<SpriteRenderer>();
+            sr.sprite = kaelSprite;
+            sr.color = Color.white;
+
+            var animController = AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>("Assets/Art/Animations/Kael/Kael.controller");
+            if (animController != null)
+            {
+                var animator = visual.AddComponent<Animator>();
+                animator.runtimeAnimatorController = animController;
+            }
 
             // Add Player Core Components
             playerObj.AddComponent<SquashAndStretch>();
