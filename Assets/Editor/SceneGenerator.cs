@@ -21,10 +21,20 @@ namespace EchoOfTheVoid.Editor
         private const string SCENE_DIR = "Assets/Scenes";
         private const string SCENE_PATH = "Assets/Scenes/Prototype_Level1.unity";
         private const string ENEMY_DATA_DIR = "Assets/Settings/Enemies";
+        private const string PREFAB_DIR = "Assets/Prefabs";
 
         [MenuItem("Tools/Echo of the Void/Generate Prototype Scene")]
         public static void GeneratePrototypeScene()
         {
+            // The scene is fully rebuilt: protect hand-made level edits from an accidental click
+            if (!Application.isBatchMode && File.Exists(SCENE_PATH) &&
+                !EditorUtility.DisplayDialog("Generate Prototype Scene",
+                    "This REBUILDS Prototype_Level1.unity and discards any manual edits to it.\n\nPrefabs (Player, Enemies) are kept.",
+                    "Rebuild scene", "Cancel"))
+            {
+                return;
+            }
+
             Debug.Log("[SceneGenerator] Starting Vertical Slice Prototype Level Generation...");
 
             // 1. Ensure Sprite & Slash Assets and Enemy ScriptableObjects
@@ -100,13 +110,11 @@ namespace EchoOfTheVoid.Editor
             rb.gravityScale = 0f;
 
             var col = playerObj.AddComponent<BoxCollider2D>();
-            // GDD metrics: 14px x 26px (~0.875 x 1.625)
+            // GDD metrics: 14px x 26px (~0.875 x 1.625). Root keeps scale 1 so the collider is in real units.
             col.size = new Vector2(0.875f, 1.625f);
 
-            var playerRenderer = playerObj.AddComponent<SpriteRenderer>();
-            playerRenderer.sprite = boxSprite;
-            playerRenderer.color = new Color(0.95f, 0.95f, 0.95f, 1f);
-            playerObj.transform.localScale = new Vector3(0.875f, 1.625f, 1f);
+            // Sprite lives on a child so artists can swap it / add an Animator without touching physics
+            AddVisual(playerObj, boxSprite, new Vector2(0.875f, 1.625f), new Color(0.95f, 0.95f, 0.95f, 1f));
 
             // Add Player Core Components
             playerObj.AddComponent<SquashAndStretch>();
@@ -120,6 +128,9 @@ namespace EchoOfTheVoid.Editor
             // PlayerRespawn has [RequireComponent(PlayerController)], so the controller already exists
             var playerCtrl = playerObj.GetComponent<PlayerController>() ?? playerObj.AddComponent<PlayerController>();
             playerCtrl.SetGroundLayer((1 << neutralLayer) | (1 << primeLayer) | (1 << echoLayer));
+
+            // Player becomes a prefab (reused on later runs so artist edits survive)
+            playerObj = SaveOrReusePrefab(playerObj, "Player", "Player");
 
             // Wire camera target directly
             camFollow.SetTarget(playerObj.transform);
@@ -278,7 +289,6 @@ namespace EchoOfTheVoid.Editor
             GameObject obj = new GameObject(name);
             obj.transform.SetParent(parent);
             obj.transform.position = pos;
-            obj.transform.localScale = new Vector3(1.2f, 2.0f, 1f);
             obj.layer = layer;
 
             var rb = obj.AddComponent<Rigidbody2D>();
@@ -287,13 +297,12 @@ namespace EchoOfTheVoid.Editor
             rb.mass = 5f;
 
             var col = obj.AddComponent<BoxCollider2D>();
-            col.size = Vector2.one;
-
-            var sr = obj.AddComponent<SpriteRenderer>();
-            sr.sprite = sprite;
+            col.size = new Vector2(1.2f, 2.0f);
+            AddVisual(obj, sprite, new Vector2(1.2f, 2.0f), Color.white);
 
             var dummy = obj.AddComponent<TrainingDummy>();
             SetEnemyDataField(dummy, data, realm);
+            SaveOrReusePrefab(obj, "Enemy_" + name, "Enemies");
         }
 
         private static void CreateCrawler(Transform parent, string name, Vector3 pos, Sprite sprite, int layer, EnemyDataSO data)
@@ -301,7 +310,6 @@ namespace EchoOfTheVoid.Editor
             GameObject obj = new GameObject(name);
             obj.transform.SetParent(parent);
             obj.transform.position = pos;
-            obj.transform.localScale = new Vector3(1.4f, 1.0f, 1f);
             obj.layer = layer;
 
             var rb = obj.AddComponent<Rigidbody2D>();
@@ -309,13 +317,12 @@ namespace EchoOfTheVoid.Editor
             rb.freezeRotation = true;
 
             var col = obj.AddComponent<BoxCollider2D>();
-            col.size = Vector2.one;
-
-            var sr = obj.AddComponent<SpriteRenderer>();
-            sr.sprite = sprite;
+            col.size = new Vector2(1.4f, 1.0f);
+            AddVisual(obj, sprite, new Vector2(1.4f, 1.0f), Color.white);
 
             var crawler = obj.AddComponent<ChronoCrawler>();
             SetEnemyDataField(crawler, data, RealmType.Prime);
+            SaveOrReusePrefab(obj, "Enemy_" + name, "Enemies");
         }
 
         private static void CreateVoidWeaver(Transform parent, string name, Vector3 pos, Sprite sprite, int layer, EnemyDataSO data)
@@ -323,7 +330,6 @@ namespace EchoOfTheVoid.Editor
             GameObject obj = new GameObject(name);
             obj.transform.SetParent(parent);
             obj.transform.position = pos;
-            obj.transform.localScale = new Vector3(1.2f, 1.2f, 1f);
             obj.layer = layer;
 
             var rb = obj.AddComponent<Rigidbody2D>();
@@ -333,12 +339,62 @@ namespace EchoOfTheVoid.Editor
 
             var col = obj.AddComponent<CircleCollider2D>();
             col.radius = 0.6f;
-
-            var sr = obj.AddComponent<SpriteRenderer>();
-            sr.sprite = sprite;
+            AddVisual(obj, sprite, new Vector2(1.2f, 1.2f), Color.white);
 
             var weaver = obj.AddComponent<VoidWeaver>();
             SetEnemyDataField(weaver, data, RealmType.Echo);
+            SaveOrReusePrefab(obj, "Enemy_" + name, "Enemies");
+        }
+
+        /// <summary>Adds a child "Visual" carrying the sprite, sized in world units (root keeps scale 1).</summary>
+        private static SpriteRenderer AddVisual(GameObject root, Sprite sprite, Vector2 size, Color color)
+        {
+            var visual = new GameObject("Visual");
+            visual.transform.SetParent(root.transform, false);
+            visual.transform.localScale = new Vector3(size.x, size.y, 1f);
+            visual.layer = root.layer;
+
+            var sr = visual.AddComponent<SpriteRenderer>();
+            sr.sprite = sprite;
+            sr.color = color;
+            return sr;
+        }
+
+        /// <summary>
+        /// First run: saves <paramref name="built"/> as a prefab and connects the scene object to it.
+        /// Later runs: reuses the existing prefab so hand edits (sprites, animators) are kept.
+        /// Returns the scene instance to use from now on.
+        /// </summary>
+        private static GameObject SaveOrReusePrefab(GameObject built, string prefabName, string subFolder)
+        {
+            string dir = $"{PREFAB_DIR}/{subFolder}";
+            EnsureFolder(dir);
+            string path = $"{dir}/{prefabName}.prefab";
+
+            var existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            if (existing == null)
+            {
+                return PrefabUtility.SaveAsPrefabAssetAndConnect(built, path, InteractionMode.AutomatedAction);
+            }
+
+            Transform parent = built.transform.parent;
+            Vector3 position = built.transform.position;
+            string instanceName = built.name;
+            Object.DestroyImmediate(built);
+
+            var instance = (GameObject)PrefabUtility.InstantiatePrefab(existing);
+            if (parent != null) instance.transform.SetParent(parent, false);
+            instance.transform.position = position;
+            instance.name = instanceName;
+            return instance;
+        }
+
+        private static void EnsureFolder(string assetPath)
+        {
+            if (AssetDatabase.IsValidFolder(assetPath)) return;
+            string parent = Path.GetDirectoryName(assetPath).Replace('\\', '/');
+            EnsureFolder(parent);
+            AssetDatabase.CreateFolder(parent, Path.GetFileName(assetPath));
         }
 
         private static void SetEnemyDataField(EnemyBase enemy, EnemyDataSO data, RealmType realm)
