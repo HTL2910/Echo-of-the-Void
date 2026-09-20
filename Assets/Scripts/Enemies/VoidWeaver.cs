@@ -16,6 +16,14 @@ namespace EchoOfTheVoid.Enemies
         private Transform _playerTransform;
         private float _shootTimer;
         private bool _isCharging;
+        private EnemyAnimationDriver _animDriver;
+
+        protected override void Awake()
+        {
+            base.Awake();
+            _animDriver = GetComponent<EnemyAnimationDriver>();
+            OnReset += HandleWeaverReset;
+        }
 
         protected override void Start()
         {
@@ -28,9 +36,29 @@ namespace EchoOfTheVoid.Enemies
             _shootTimer = shootInterval * 0.5f;
         }
 
-        private void Update()
+        private void HandleWeaverReset()
         {
+            _isCharging = false;
+            _shootTimer = shootInterval * 0.5f;
+            rb.linearVelocity = Vector2.zero;
+        }
+
+        protected override void Update()
+        {
+            base.Update();
             if (isDead) return;
+
+            if (isStunned)
+            {
+                if (_isCharging)
+                {
+                    StopAllCoroutines();
+                    _isCharging = false;
+                }
+                rb.linearVelocity = Vector2.zero;
+                if (_animDriver != null) _animDriver.SetMovement(0f, false);
+                return;
+            }
 
             if (_playerTransform == null)
             {
@@ -64,6 +92,11 @@ namespace EchoOfTheVoid.Enemies
 
             rb.linearVelocity = Vector2.Lerp(rb.linearVelocity, targetVel, Time.deltaTime * 3f);
 
+            if (_animDriver != null)
+            {
+                _animDriver.SetMovement(rb.linearVelocity.magnitude, false);
+            }
+
             // Shooting logic
             _shootTimer -= Time.deltaTime;
             if (_shootTimer <= 0f && !_isCharging)
@@ -75,11 +108,20 @@ namespace EchoOfTheVoid.Enemies
         private IEnumerator ShootRoutine(Vector2 dir)
         {
             _isCharging = true;
+            if (_animDriver != null) _animDriver.TriggerEnemyCharge();
 
             // Flash telegraph
             if (spriteRenderer != null) spriteRenderer.color = Color.white;
             yield return new WaitForSeconds(chargeDuration);
             if (spriteRenderer != null) UpdateVisualAffinity();
+
+            if (isDead || isStunned)
+            {
+                _isCharging = false;
+                yield break;
+            }
+
+            if (_animDriver != null) _animDriver.TriggerEnemyAttack();
 
             // Spawn projectile
             GameObject projObj = new GameObject("EchoProjectile");

@@ -104,6 +104,8 @@ GameObject:
   - component: {fileID: 8245161500509159532}
   - component: {fileID: 3735220926597276280}
   - component: {fileID: 1189338481772118864}
+  - component: {fileID: 5070105391889}
+  - component: {fileID: 5070105391890}
   m_Layer: 10
   m_Name: Enemy_Dummy_Prime
   m_TagString: Untagged
@@ -238,3 +240,28 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &5070105391889
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5070105391014793426}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0000003000000000000000000000001, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &5070105391890
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5070105391014793426}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0000003000000000000000000000002, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  isBoss: 0

@@ -12,6 +12,8 @@ GameObject:
   - component: {fileID: 3570671142516757722}
   - component: {fileID: 7242913922455359928}
   - component: {fileID: 2588921502716110592}
+  - component: {fileID: 2187333609889}
+  - component: {fileID: 2187333609890}
   m_Layer: 10
   m_Name: Enemy_Dummy_Echo
   m_TagString: Untagged
@@ -238,3 +240,28 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &2187333609889
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2187333609189930171}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0000003000000000000000000000001, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &2187333609890
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2187333609189930171}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0000003000000000000000000000002, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  isBoss: 0

@@ -16,6 +16,14 @@ namespace EchoOfTheVoid.Enemies
         private float _moveDirection = 1f;
         private Transform _playerTransform;
         private float _alertTimer;
+        private EnemyAnimationDriver _animDriver;
+
+        protected override void Awake()
+        {
+            base.Awake();
+            _animDriver = GetComponent<EnemyAnimationDriver>();
+            OnReset += HandleCrawlerReset;
+        }
 
         protected override void Start()
         {
@@ -37,9 +45,23 @@ namespace EchoOfTheVoid.Enemies
             if (player != null) _playerTransform = player.transform;
         }
 
-        private void Update()
+        private void HandleCrawlerReset()
         {
+            _state = CrawlerState.Patrol;
+            _moveDirection = 1f;
+            if (spriteRenderer != null) spriteRenderer.flipX = false;
+        }
+
+        protected override void Update()
+        {
+            base.Update();
             if (isDead) return;
+
+            if (isStunned)
+            {
+                if (_animDriver != null) _animDriver.SetMovement(0f, true);
+                return;
+            }
 
             switch (_state)
             {
@@ -53,11 +75,17 @@ namespace EchoOfTheVoid.Enemies
                     UpdateCharge();
                     break;
             }
+
+            if (_animDriver != null)
+            {
+                float currentSpeed = Mathf.Abs(rb.linearVelocity.x);
+                _animDriver.SetMovement(currentSpeed, true);
+            }
         }
 
         private void FixedUpdate()
         {
-            if (isDead) return;
+            if (isDead || isStunned) return;
 
             float speed = (_state == CrawlerState.Charge) 
                 ? (enemyData != null ? enemyData.AlertSpeed : 5.0f) 
@@ -97,6 +125,7 @@ namespace EchoOfTheVoid.Enemies
                 {
                     _state = CrawlerState.Alert;
                     _alertTimer = 0.3f; // GDD: pauses 0.3s on alert
+                    if (_animDriver != null) _animDriver.TriggerEnemyAlert();
                     if (spriteRenderer != null) spriteRenderer.color = Color.red;
                 }
             }
@@ -108,6 +137,7 @@ namespace EchoOfTheVoid.Enemies
             if (_alertTimer <= 0f)
             {
                 _state = CrawlerState.Charge;
+                if (_animDriver != null) _animDriver.TriggerEnemyCharge();
                 if (_playerTransform != null)
                 {
                     _moveDirection = (_playerTransform.position.x > transform.position.x) ? 1f : -1f;
@@ -118,6 +148,18 @@ namespace EchoOfTheVoid.Enemies
 
         private void UpdateCharge()
         {
+            // Even when charging, don't walk off ledges
+            Vector2 forwardCheckPos = (Vector2)transform.position + new Vector2(_moveDirection * 0.6f, -0.2f);
+            RaycastHit2D groundHit = Physics2D.Raycast(forwardCheckPos, Vector2.down, edgeCheckDistance, groundLayer);
+            Vector2 wallCheckPos = (Vector2)transform.position + new Vector2(_moveDirection * 0.5f, 0.2f);
+            RaycastHit2D wallHit = Physics2D.Raycast(wallCheckPos, new Vector2(_moveDirection, 0f), 0.3f, groundLayer);
+
+            if (groundHit.collider == null || wallHit.collider != null)
+            {
+                _moveDirection = -_moveDirection;
+                if (spriteRenderer != null) spriteRenderer.flipX = (_moveDirection < 0f);
+            }
+
             if (_playerTransform == null)
             {
                 _state = CrawlerState.Patrol;
