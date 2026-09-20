@@ -3,6 +3,8 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 #endif
 using EchoOfTheVoid.Core;
+using EchoOfTheVoid.Feedback;
+using EchoOfTheVoid.Player.States;
 
 namespace EchoOfTheVoid.Player
 {
@@ -21,82 +23,99 @@ namespace EchoOfTheVoid.Player
         [SerializeField] private float coyoteDuration = 0.1f;
         [SerializeField] private float jumpBufferDuration = 0.12f;
 
+        [Header("Wall Jump Metrics (GDD)")]
+        [SerializeField] private float wallJumpHorizontalSpeed = 11f;
+        [SerializeField] private float wallJumpVerticalSpeed = 16f;
+
         [Header("Dash Metrics (GDD)")]
         [SerializeField] private float dashSpeed = 24f;
         [SerializeField] private float dashDuration = 0.2f;
 
-        [Header("Ground Check")]
+        [Header("Collision Layers")]
         [SerializeField] private LayerMask groundLayer = ~0;
         [SerializeField] private float groundCheckDistance = 0.08f;
+        [SerializeField] private float wallCheckDistance = 0.15f;
 
         private Rigidbody2D _rb;
         private BoxCollider2D _collider;
         private SpriteRenderer _renderer;
+        private SquashAndStretch _squash;
+        private GhostTrail _ghostTrail;
+        private PlayerCombat _combat;
+        private PlayerStats _stats;
 
-        // Computed physics parameters
+        // Kinematics parameters
         private float _jumpVelocity;
         private float _baseGravity;
         private float _fallGravity;
 
-        // Runtime state
+        // Runtime State
+        private PlayerStateMachine _stateMachine;
         private float _horizontalInput;
-        private float _currentVelocityX;
+        private float _facingDirection = 1f;
         private bool _isGrounded;
+        private bool _isTouchingWall;
+        private float _wallDirection;
         private float _coyoteTimer;
         private float _jumpBufferTimer;
 
-        // Dash state
-        private bool _isDashing;
-        private float _dashTimer;
-        private float _dashDirection = 1f;
+        // Dash & Freeze timers
         private bool _canDash = true;
+        private float _freezeVerticalTimer;
 
+        public float HorizontalInput => _horizontalInput;
+        public float FacingDirection => _facingDirection;
         public bool IsGrounded => _isGrounded;
-        public bool IsDashing => _isDashing;
+        public bool IsTouchingWall => _isTouchingWall;
+        public float WallDirection => _wallDirection;
+        public float DashDuration => dashDuration;
+        public Vector2 LinearVelocity => _rb.linearVelocity;
+        public bool IsAttacking => (_combat != null && _combat.IsAttacking);
+        public string CurrentStateName => _stateMachine?.CurrentState?.GetType().Name ?? "None";
 
         private void Awake()
         {
             _rb = GetComponent<Rigidbody2D>();
             _collider = GetComponent<BoxCollider2D>();
-            _renderer = GetComponent<SpriteRenderer>();
+            _renderer = GetComponentInChildren<SpriteRenderer>();
+            _squash = GetComponent<SquashAndStretch>();
+            _ghostTrail = GetComponent<GhostTrail>();
+            _combat = GetComponent<PlayerCombat>();
+            _stats = GetComponent<PlayerStats>();
 
-            // Calculate exact kinematics from GDD formula:
-            // V0 = 2h / t_apex
-            // g = 2h / (t_apex)^2
+            // Calculate kinematic parameters
             _jumpVelocity = (2f * jumpHeight) / timeToApex;
             _baseGravity = (2f * jumpHeight) / (timeToApex * timeToApex);
             _fallGravity = _baseGravity * fallGravityMultiplier;
 
-            // Turn off default Unity gravity scale because we handle custom kinematic curves
             _rb.gravityScale = 0f;
+
+            // Initialize FSM
+            _stateMachine = new PlayerStateMachine(this);
+            _stateMachine.Initialize(new PlayerIdleState());
         }
 
         private void Update()
         {
-            HandleInput();
+            HandleInputs();
             UpdateTimers();
+            _stateMachine.Update();
         }
 
         private void FixedUpdate()
         {
-            CheckGrounded();
-
-            if (_isDashing)
-            {
-                ExecuteDash();
-                return;
-            }
-
-            ApplyHorizontalMovement();
-            ApplyCustomGravityAndJump();
+            CheckEnvironment();
+            _stateMachine.FixedUpdate();
         }
 
-        private void HandleInput()
+        private void HandleInputs()
         {
             float moveX = 0f;
             bool jumpPressed = false;
             bool dashPressed = false;
             bool shiftPressed = false;
+            bool attackPressed = false;
+            bool resonancePressed = false;
 
 #if ENABLE_INPUT_SYSTEM
             if (Keyboard.current != null)
@@ -104,20 +123,11 @@ namespace EchoOfTheVoid.Player
                 if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed) moveX -= 1f;
                 if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed) moveX += 1f;
 
-                if (Keyboard.current.spaceKey.wasPressedThisFrame || Keyboard.current.wKey.wasPressedThisFrame || Keyboard.current.upArrowKey.wasPressedThisFrame)
-                {
-                    jumpPressed = true;
-                }
-
-                if (Keyboard.current.leftShiftKey.wasPressedThisFrame || Keyboard.current.eKey.wasPressedThisFrame)
-                {
-                    shiftPressed = true;
-                }
-
-                if (Keyboard.current.jKey.wasPressedThisFrame || Keyboard.current.kKey.wasPressedThisFrame || Keyboard.current.leftCtrlKey.wasPressedThisFrame)
-                {
-                    dashPressed = true;
-                }
+                if (Keyboard.current.spaceKey.wasPressedThisFrame || Keyboard.current.wKey.wasPressedThisFrame) jumpPressed = true;
+                if (Keyboard.current.leftShiftKey.wasPressedThisFrame || Keyboard.current.eKey.wasPressedThisFrame) shiftPressed = true;
+                if (Keyboard.current.jKey.wasPressedThisFrame || Keyboard.current.zKey.wasPressedThisFrame) attackPressed = true;
+                if (Keyboard.current.kKey.wasPressedThisFrame || Keyboard.current.leftCtrlKey.wasPressedThisFrame) dashPressed = true;
+                if (Keyboard.current.lKey.wasPressedThisFrame || Keyboard.current.uKey.wasPressedThisFrame) resonancePressed = true;
             }
 
             if (Gamepad.current != null)
@@ -126,34 +136,50 @@ namespace EchoOfTheVoid.Player
                 if (Mathf.Abs(stickX) > 0.15f) moveX = stickX;
 
                 if (Gamepad.current.buttonSouth.wasPressedThisFrame) jumpPressed = true;
-                if (Gamepad.current.rightShoulder.wasPressedThisFrame || Gamepad.current.buttonNorth.wasPressedThisFrame) shiftPressed = true;
-                if (Gamepad.current.buttonWest.wasPressedThisFrame || Gamepad.current.rightTrigger.wasPressedThisFrame) dashPressed = true;
+                if (Gamepad.current.rightShoulder.wasPressedThisFrame) shiftPressed = true;
+                if (Gamepad.current.buttonWest.wasPressedThisFrame) attackPressed = true;
+                if (Gamepad.current.rightTrigger.wasPressedThisFrame) dashPressed = true;
+                if (Gamepad.current.buttonNorth.wasPressedThisFrame) resonancePressed = true;
             }
 #else
             moveX = Input.GetAxisRaw("Horizontal");
             if (Input.GetButtonDown("Jump") || Input.GetKeyDown(KeyCode.Space)) jumpPressed = true;
             if (Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown(KeyCode.E)) shiftPressed = true;
-            if (Input.GetKeyDown(KeyCode.J) || Input.GetKeyDown(KeyCode.K)) dashPressed = true;
+            if (Input.GetKeyDown(KeyCode.J) || Input.GetKeyDown(KeyCode.Z)) attackPressed = true;
+            if (Input.GetKeyDown(KeyCode.K) || Input.GetKeyDown(KeyCode.LeftControl)) dashPressed = true;
+            if (Input.GetKeyDown(KeyCode.L) || Input.GetKeyDown(KeyCode.U)) resonancePressed = true;
 #endif
 
             _horizontalInput = Mathf.Clamp(moveX, -1f, 1f);
 
-            if (_horizontalInput > 0.05f) _dashDirection = 1f;
-            else if (_horizontalInput < -0.05f) _dashDirection = -1f;
-
-            if (jumpPressed)
+            if (_horizontalInput > 0.05f)
             {
-                _jumpBufferTimer = jumpBufferDuration;
+                _facingDirection = 1f;
+                if (_renderer != null) _renderer.flipX = false;
+            }
+            else if (_horizontalInput < -0.05f)
+            {
+                _facingDirection = -1f;
+                if (_renderer != null) _renderer.flipX = true;
             }
 
-            if (dashPressed && _canDash && !_isDashing)
-            {
-                StartDash();
-            }
+            if (jumpPressed) _jumpBufferTimer = jumpBufferDuration;
+            if (dashPressed && _canDash) _jumpBufferTimer = 0f; // prioritize dash
 
+            // Reality Shift
             if (shiftPressed && RealityManager.Instance != null)
             {
                 RealityManager.Instance.ToggleRealm();
+            }
+
+            // Attacks
+            if (attackPressed && _combat != null)
+            {
+                _combat.TryNormalAttack();
+            }
+            if (resonancePressed && _combat != null)
+            {
+                _combat.TryResonanceStrike();
             }
         }
 
@@ -161,87 +187,179 @@ namespace EchoOfTheVoid.Player
         {
             if (_coyoteTimer > 0f) _coyoteTimer -= Time.deltaTime;
             if (_jumpBufferTimer > 0f) _jumpBufferTimer -= Time.deltaTime;
-
-            if (_isDashing)
-            {
-                _dashTimer -= Time.deltaTime;
-                if (_dashTimer <= 0f)
-                {
-                    _isDashing = false;
-                }
-            }
+            if (_freezeVerticalTimer > 0f) _freezeVerticalTimer -= Time.deltaTime;
         }
 
-        private void CheckGrounded()
+        private void CheckEnvironment()
         {
+            // Ground Check
             Vector2 origin = (Vector2)transform.position + _collider.offset - new Vector2(0f, _collider.size.y * 0.5f);
-            Vector2 size = new Vector2(_collider.size.x * 0.9f, groundCheckDistance);
+            Vector2 size = new Vector2(_collider.size.x * 0.85f, groundCheckDistance);
 
             RaycastHit2D hit = Physics2D.BoxCast(origin, size, 0f, Vector2.down, groundCheckDistance, groundLayer);
-
-            // Filter out self
             bool wasGrounded = _isGrounded;
             _isGrounded = hit.collider != null && hit.collider.gameObject != gameObject;
 
             if (_isGrounded)
             {
                 _coyoteTimer = coyoteDuration;
-                _canDash = true; // Refresh dash on landing
+                _canDash = true; // reset dash on landing
+            }
+
+            // Wall Check
+            _isTouchingWall = false;
+            _wallDirection = 0f;
+
+            if (!_isGrounded)
+            {
+                Vector2 wallOrigin = (Vector2)transform.position + _collider.offset;
+                Vector2 wallSize = new Vector2(wallCheckDistance, _collider.size.y * 0.7f);
+
+                RaycastHit2D hitRight = Physics2D.BoxCast(wallOrigin, wallSize, 0f, Vector2.right, wallCheckDistance, groundLayer);
+                if (hitRight.collider != null && hitRight.collider.gameObject != gameObject)
+                {
+                    _isTouchingWall = true;
+                    _wallDirection = 1f;
+                }
+                else
+                {
+                    RaycastHit2D hitLeft = Physics2D.BoxCast(wallOrigin, wallSize, 0f, Vector2.left, wallCheckDistance, groundLayer);
+                    if (hitLeft.collider != null && hitLeft.collider.gameObject != gameObject)
+                    {
+                        _isTouchingWall = true;
+                        _wallDirection = -1f;
+                    }
+                }
             }
         }
 
-        private void ApplyHorizontalMovement()
+        public void ChangeState(IPlayerState newState)
+        {
+            _stateMachine.ChangeState(newState);
+        }
+
+        public bool CheckAndConsumeJump()
+        {
+            if (_jumpBufferTimer > 0f && (_coyoteTimer > 0f || _isTouchingWall))
+            {
+                _jumpBufferTimer = 0f;
+                _coyoteTimer = 0f;
+                return true;
+            }
+            return false;
+        }
+
+        public bool CheckAndConsumeDash()
+        {
+#if ENABLE_INPUT_SYSTEM
+            bool dashInput = (Keyboard.current != null && (Keyboard.current.kKey.wasPressedThisFrame || Keyboard.current.leftCtrlKey.wasPressedThisFrame))
+                          || (Gamepad.current != null && Gamepad.current.rightTrigger.wasPressedThisFrame);
+#else
+            bool dashInput = Input.GetKeyDown(KeyCode.K) || Input.GetKeyDown(KeyCode.LeftControl);
+#endif
+            if (dashInput && _canDash)
+            {
+                _canDash = false;
+                return true;
+            }
+            return false;
+        }
+
+        public bool CheckAndConsumeAttack()
+        {
+            return _combat != null && _combat.IsAttacking;
+        }
+
+        public void ApplyHorizontalMovement()
         {
             float targetSpeed = _horizontalInput * maxSpeed;
             float accelRate = (Mathf.Abs(targetSpeed) > 0.01f) ? (maxSpeed / timeToMaxSpeed) : (maxSpeed / timeToStop);
 
-            _currentVelocityX = Mathf.MoveTowards(_rb.linearVelocity.x, targetSpeed, accelRate * Time.fixedDeltaTime);
-            _rb.linearVelocity = new Vector2(_currentVelocityX, _rb.linearVelocity.y);
+            float vx = Mathf.MoveTowards(_rb.linearVelocity.x, targetSpeed, accelRate * Time.fixedDeltaTime);
+            _rb.linearVelocity = new Vector2(vx, _rb.linearVelocity.y);
         }
 
-        private void ApplyCustomGravityAndJump()
+        public void ApplyDeceleration()
         {
+            float vx = Mathf.MoveTowards(_rb.linearVelocity.x, 0f, (maxSpeed / timeToStop) * Time.fixedDeltaTime);
+            _rb.linearVelocity = new Vector2(vx, _rb.linearVelocity.y);
+        }
+
+        public void ApplyCustomGravity(bool isFalling)
+        {
+            if (_freezeVerticalTimer > 0f)
+            {
+                _rb.linearVelocity = new Vector2(_rb.linearVelocity.x, 0f);
+                return;
+            }
+
             Vector2 vel = _rb.linearVelocity;
-
-            // Jump Execution via Jump Buffer and Coyote Time
-            if (_jumpBufferTimer > 0f && _coyoteTimer > 0f)
-            {
-                vel.y = _jumpVelocity;
-                _jumpBufferTimer = 0f;
-                _coyoteTimer = 0f;
-            }
-            else
-            {
-                // Custom gravity curve
-                float gravityToApply = (vel.y < 0f) ? _fallGravity : _baseGravity;
-                vel.y -= gravityToApply * Time.fixedDeltaTime;
-            }
-
+            float g = (isFalling || vel.y < 0f) ? _fallGravity : _baseGravity;
+            vel.y -= g * Time.fixedDeltaTime;
             _rb.linearVelocity = vel;
         }
 
-        private void StartDash()
+        public void ExecuteJump()
         {
-            _isDashing = true;
-            _dashTimer = dashDuration;
-            _canDash = false;
-            _rb.linearVelocity = new Vector2(_dashDirection * dashSpeed, 0f);
+            _rb.linearVelocity = new Vector2(_rb.linearVelocity.x, _jumpVelocity);
+            if (_squash != null) _squash.OnJump();
         }
 
-        private void ExecuteDash()
+        public void ExecuteWallJump()
         {
-            _rb.linearVelocity = new Vector2(_dashDirection * dashSpeed, 0f);
+            // Jump away from the wall
+            float launchX = -_wallDirection * wallJumpHorizontalSpeed;
+            _rb.linearVelocity = new Vector2(launchX, wallJumpVerticalSpeed);
+            _facingDirection = -_wallDirection;
+            if (_renderer != null) _renderer.flipX = (_facingDirection < 0f);
+            if (_squash != null) _squash.OnJump();
         }
 
-        private void OnDrawGizmosSelected()
+        public void StartDash()
         {
-            if (_collider == null) _collider = GetComponent<BoxCollider2D>();
-            if (_collider == null) return;
+            if (_stats != null) _stats.SetInvulnerable(true);
+            _rb.linearVelocity = new Vector2(_facingDirection * dashSpeed, 0f);
+            if (_squash != null) _squash.OnDash();
 
-            Gizmos.color = _isGrounded ? Color.green : Color.red;
-            Vector2 origin = (Vector2)transform.position + _collider.offset - new Vector2(0f, _collider.size.y * 0.5f);
-            Vector2 size = new Vector2(_collider.size.x * 0.9f, groundCheckDistance);
-            Gizmos.DrawWireCube(origin + Vector2.down * (groundCheckDistance * 0.5f), size);
+            RealmType realm = (RealityManager.Instance != null) ? RealityManager.Instance.CurrentRealm : RealmType.Prime;
+            if (_ghostTrail != null) _ghostTrail.StartTrail(realm);
+        }
+
+        public void MaintainDashVelocity()
+        {
+            _rb.linearVelocity = new Vector2(_facingDirection * dashSpeed, 0f);
+        }
+
+        public void EndDash()
+        {
+            if (_stats != null) _stats.SetInvulnerable(false);
+            if (_ghostTrail != null) _ghostTrail.StopTrail();
+        }
+
+        public void SetVelocity(Vector2 velocity)
+        {
+            _rb.linearVelocity = velocity;
+        }
+
+        public void SetHorizontalVelocity(float vx)
+        {
+            _rb.linearVelocity = new Vector2(vx, _rb.linearVelocity.y);
+        }
+
+        public void ResetVerticalVelocity()
+        {
+            _rb.linearVelocity = new Vector2(_rb.linearVelocity.x, 0f);
+        }
+
+        public void FreezeVerticalVelocityFor(float seconds)
+        {
+            _freezeVerticalTimer = seconds;
+            ResetVerticalVelocity();
+        }
+
+        public void TriggerSquashLand()
+        {
+            if (_squash != null) _squash.OnLand();
         }
     }
 }
