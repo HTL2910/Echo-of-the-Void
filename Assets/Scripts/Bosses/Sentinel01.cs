@@ -23,6 +23,7 @@ namespace EchoOfTheVoid.Bosses
 
         [Header("Sentinel-01 Timings")]
         [SerializeField] private float laserDuration = 2.0f;
+        private const float LaserTickSeconds = 0.25f;
 
         private SentinelState _currentState = SentinelState.Idle;
         private Transform _playerTransform;
@@ -148,6 +149,7 @@ namespace EchoOfTheVoid.Bosses
             int dmgPerSec = (phase != null) ? phase.LaserDamagePerSecond : 12;
 
             float elapsed = 0f;
+            float laserTickTimer = LaserTickSeconds; // first tick lands immediately
             float sweepAngle = -60f;
             while (elapsed < laserDuration && !isDead && !isStunned)
             {
@@ -168,10 +170,16 @@ namespace EchoOfTheVoid.Bosses
                     var damageable = hit.collider.GetComponentInParent<IDamageable>();
                     if (damageable != null)
                     {
-                        DamageInfo info = new DamageInfo(
-                            Mathf.RoundToInt(dmgPerSec * Time.deltaTime),
-                            hit.point, dir * 3f, RealmType.Prime);
-                        damageable.TakeDamage(info);
+                        // Damage per second delivered in ticks: a per-frame amount rounds to 0 and would only flicker i-frames
+                        laserTickTimer += Time.deltaTime;
+                        if (laserTickTimer >= LaserTickSeconds)
+                        {
+                            laserTickTimer -= LaserTickSeconds;
+                            DamageInfo info = new DamageInfo(
+                                Mathf.Max(1, Mathf.RoundToInt(dmgPerSec * LaserTickSeconds)),
+                                hit.point, dir * 3f, RealmType.Prime);
+                            damageable.TakeDamage(info);
+                        }
                     }
                 }
 

@@ -30,13 +30,16 @@ namespace EchoOfTheVoid.Editor.Codex
 
             var root = new GameObject("Sentinel01");
             root.transform.localScale = Vector3.one;
-            root.tag = "Enemy";
 
             var rb = root.AddComponent<Rigidbody2D>();
             rb.constraints = RigidbodyConstraints2D.FreezePosition;
 
             var col = root.AddComponent<BoxCollider2D>();
             col.size = new Vector2(2.0f, 3.0f);
+
+            // Kael's attacks only hit the Enemy layer: without this the boss could never be damaged
+            int enemyLayer = LayerMask.NameToLayer("Enemy");
+            root.layer = enemyLayer != -1 ? enemyLayer : 0;
 
             root.AddComponent<Sentinel01>();
 

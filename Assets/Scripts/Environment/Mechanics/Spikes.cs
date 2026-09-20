@@ -11,7 +11,7 @@ namespace EchoOfTheVoid.Environment.Mechanics
     /// Echo Realm: transforms into a bounce pad that launches Kael upward.
     /// </summary>
     [RequireComponent(typeof(Collider2D))]
-    public class Spikes : MonoBehaviour, IRealityObstacle
+    public class Spikes : MonoBehaviour
     {
         [Header("Bounce Settings (Echo Realm)")]
         [SerializeField] private float bounceForce = 18f;
@@ -33,6 +33,8 @@ namespace EchoOfTheVoid.Environment.Mechanics
 
         private void Start()
         {
+            // Start in whatever realm the game is in (it may not be Prime, e.g. after Continue)
+            if (RealityManager.Instance != null) _currentRealm = RealityManager.Instance.CurrentRealm;
             UpdateVisual();
             RealityEventBus.OnRealmSwitched += OnRealmSwitch;
         }
@@ -66,6 +68,12 @@ namespace EchoOfTheVoid.Environment.Mechanics
             }
         }
 
+        // Kael standing in the spikes when the world flips to Prime must be caught too, not only on entry
+        private void OnTriggerStay2D(Collider2D other)
+        {
+            if (_currentRealm == RealmType.Prime) HandlePrimeContact(other);
+        }
+
         private void HandlePrimeContact(Collider2D other)
         {
             var respawn = other.GetComponentInParent<PlayerRespawn>();
@@ -83,8 +91,5 @@ namespace EchoOfTheVoid.Environment.Mechanics
             // Launch player upward (bounce pad behaviour)
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, bounceForce);
         }
-
-        // IRealityObstacle: obstacle is solid only in Prime (acts as hazard, not blocker in Echo)
-        public RealmType ObstacleRealm => RealmType.Prime;
     }
 }

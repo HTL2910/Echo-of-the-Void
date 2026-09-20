@@ -40,6 +40,8 @@ namespace EchoOfTheVoid.Bosses
         protected Collider2D col;
         protected RealmType myRealm = RealmType.Echo;
 
+        public string BossId => bossId;
+        public string DisplayName => displayName;
         public RealmType EntityRealm => myRealm;
         public bool IsDead => isDead;
         public bool IsStunned => isStunned;

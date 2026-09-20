@@ -31,7 +31,6 @@ namespace EchoOfTheVoid.Editor.Codex
 
             var root = new GameObject("VoidStrider");
             root.transform.localScale = Vector3.one;
-            root.tag = "Enemy";
             root.layer = LayerMask.NameToLayer("Enemy") != -1 ? LayerMask.NameToLayer("Enemy") : 0;
 
             root.AddComponent<Rigidbody2D>();
@@ -64,7 +63,6 @@ namespace EchoOfTheVoid.Editor.Codex
 
             var root = new GameObject("PrismSentry");
             root.transform.localScale = Vector3.one;
-            root.tag = "Enemy";
             root.layer = LayerMask.NameToLayer("Enemy") != -1 ? LayerMask.NameToLayer("Enemy") : 0;
 
             var rb = root.AddComponent<Rigidbody2D>();
