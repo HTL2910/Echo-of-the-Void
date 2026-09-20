@@ -47,14 +47,11 @@ namespace EchoOfTheVoid.Feedback
             Shake(0.55f, 45f, 0.40f, 1.5f);
         }
 
+        public Vector3 ShakeOffset { get; private set; } = Vector3.zero;
+        public float ShakeRoll { get; private set; } = 0f;
+
         public void Shake(float amplitude, float frequency, float duration, float maxRoll)
         {
-            if (_cameraTransform == null)
-            {
-                if (Camera.main != null) _cameraTransform = Camera.main.transform;
-                else return;
-            }
-
             if (_shakeRoutine != null)
             {
                 StopCoroutine(_shakeRoutine);
@@ -65,8 +62,6 @@ namespace EchoOfTheVoid.Feedback
         private IEnumerator ShakeCoroutine(float amplitude, float frequency, float duration, float maxRoll)
         {
             float elapsed = 0f;
-            Vector3 basePos = _cameraTransform.localPosition;
-            Quaternion baseRot = _cameraTransform.localRotation;
 
             while (elapsed < duration)
             {
@@ -76,20 +71,23 @@ namespace EchoOfTheVoid.Feedback
                 float offsetX = (Mathf.PerlinNoise(Time.time * frequency, 0f) * 2f - 1f) * currentAmp;
                 float offsetY = (Mathf.PerlinNoise(0f, Time.time * frequency) * 2f - 1f) * currentAmp;
 
-                _cameraTransform.localPosition = new Vector3(basePos.x + offsetX, basePos.y + offsetY, basePos.z);
+                ShakeOffset = new Vector3(offsetX, offsetY, 0f);
 
                 if (maxRoll > 0.01f)
                 {
-                    float roll = (Mathf.PerlinNoise(Time.time * frequency, Time.time * frequency) * 2f - 1f) * maxRoll * decay;
-                    _cameraTransform.localRotation = Quaternion.Euler(0f, 0f, roll);
+                    ShakeRoll = (Mathf.PerlinNoise(Time.time * frequency, Time.time * frequency) * 2f - 1f) * maxRoll * decay;
+                }
+                else
+                {
+                    ShakeRoll = 0f;
                 }
 
                 elapsed += Time.unscaledDeltaTime;
                 yield return null;
             }
 
-            _cameraTransform.localPosition = basePos;
-            _cameraTransform.localRotation = baseRot;
+            ShakeOffset = Vector3.zero;
+            ShakeRoll = 0f;
             _shakeRoutine = null;
         }
     }

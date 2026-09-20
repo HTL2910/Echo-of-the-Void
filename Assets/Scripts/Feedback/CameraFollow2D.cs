@@ -60,7 +60,16 @@ namespace EchoOfTheVoid.Feedback
                 targetPos.y = Mathf.Clamp(targetPos.y, minBounds.y + vertExtent, maxBounds.y - vertExtent);
             }
 
-            transform.position = Vector3.SmoothDamp(transform.position, targetPos, ref _currentVelocity, smoothTime);
+            Vector3 nextPos = Vector3.SmoothDamp(transform.position, targetPos, ref _currentVelocity, smoothTime);
+
+            if (CameraShakeManager.Instance != null)
+            {
+                nextPos += CameraShakeManager.Instance.ShakeOffset;
+                float roll = CameraShakeManager.Instance.ShakeRoll;
+                transform.localRotation = (Mathf.Abs(roll) > 0.001f) ? Quaternion.Euler(0f, 0f, roll) : Quaternion.identity;
+            }
+
+            transform.position = nextPos;
         }
 
         public void SetTarget(Transform newTarget)
