@@ -16,9 +16,16 @@ namespace EchoOfTheVoid.UI
         [SerializeField] private Text realmText;
         [SerializeField] private Image realmBadge;
         [SerializeField] private Text announcementText;
+        [SerializeField] private Text hpValueText;
+        [SerializeField] private Text ceValueText;
+        [SerializeField] private Image iconDash;
+        [SerializeField] private Image iconWallJump;
+        [SerializeField] private Image iconResonance;
+        [SerializeField] private Image iconEchoAnchor;
 
         private PlayerStats _playerStats;
         private PlayerController _playerController;
+        private AbilitySet _abilitySet;
         private Coroutine _announcementRoutine;
 
         private void Awake()
@@ -50,6 +57,10 @@ namespace EchoOfTheVoid.UI
                 _playerStats.OnHealthChanged -= UpdateHealthBar;
                 _playerStats.OnEnergyChanged -= UpdateEnergyBar;
             }
+            if (_abilitySet != null)
+            {
+                _abilitySet.OnAbilityUnlocked -= HandleAbilityUnlocked;
+            }
             RealityEventBus.OnRealmSwitched -= UpdateRealmIndicator;
             RealityEventBus.OnShiftDenied -= ShowShiftDenied;
         }
@@ -80,6 +91,7 @@ namespace EchoOfTheVoid.UI
             {
                 _playerStats = player.GetComponent<PlayerStats>();
                 _playerController = player.GetComponent<PlayerController>();
+                _abilitySet = player.GetComponent<AbilitySet>();
 
                 if (_playerStats != null)
                 {
@@ -89,7 +101,34 @@ namespace EchoOfTheVoid.UI
                     UpdateHealthBar(_playerStats.CurrentHealth, _playerStats.MaxHealth);
                     UpdateEnergyBar(_playerStats.CurrentEnergy, _playerStats.MaxEnergy);
                 }
+
+                if (_abilitySet != null)
+                {
+                    _abilitySet.OnAbilityUnlocked += HandleAbilityUnlocked;
+                    UpdateAbilityIcons();
+                }
             }
+        }
+
+        private void HandleAbilityUnlocked(AbilityFlags ability)
+        {
+            UpdateAbilityIcons();
+        }
+
+        private void UpdateAbilityIcons()
+        {
+            if (_abilitySet == null) return;
+
+            SetIconState(iconWallJump, _abilitySet.Has(AbilityFlags.WallJump));
+            SetIconState(iconResonance, _abilitySet.Has(AbilityFlags.ResonanceStrike));
+            SetIconState(iconEchoAnchor, _abilitySet.Has(AbilityFlags.EchoAnchor));
+            SetIconState(iconDash, _abilitySet.Has(AbilityFlags.PhaseDash));
+        }
+
+        private void SetIconState(Image img, bool unlocked)
+        {
+            if (img == null) return;
+            img.color = unlocked ? Color.white : new Color(0.4f, 0.4f, 0.5f, 0.35f);
         }
 
         private void UpdateHealthBar(int current, int max)
@@ -98,6 +137,10 @@ namespace EchoOfTheVoid.UI
             {
                 healthBarFill.fillAmount = (float)current / max;
             }
+            if (hpValueText != null)
+            {
+                hpValueText.text = $"{current} / {max}";
+            }
         }
 
         private void UpdateEnergyBar(float current, int max)
@@ -105,6 +148,10 @@ namespace EchoOfTheVoid.UI
             if (energyBarFill != null && max > 0)
             {
                 energyBarFill.fillAmount = current / max;
+            }
+            if (ceValueText != null)
+            {
+                ceValueText.text = $"{(int)current} / {max}";
             }
         }
 
@@ -141,7 +188,8 @@ namespace EchoOfTheVoid.UI
             _announcementRoutine = null;
         }
 
-        public void BindElements(Image hpFill, Image ceFill, Image dashFill, Text text, Image badge, Text announcement = null)
+        public void BindElements(Image hpFill, Image ceFill, Image dashFill, Text text, Image badge, Text announcement = null,
+            Text hpVal = null, Text ceVal = null, Image dashIcon = null, Image wallJump = null, Image resonance = null, Image anchor = null)
         {
             healthBarFill = hpFill;
             energyBarFill = ceFill;
@@ -149,7 +197,14 @@ namespace EchoOfTheVoid.UI
             realmText = text;
             realmBadge = badge;
             announcementText = announcement;
+            hpValueText = hpVal;
+            ceValueText = ceVal;
+            iconDash = dashIcon;
+            iconWallJump = wallJump;
+            iconResonance = resonance;
+            iconEchoAnchor = anchor;
             if (announcementText != null) announcementText.gameObject.SetActive(false);
+            UpdateAbilityIcons();
         }
     }
 }
