@@ -1,6 +1,6 @@
 # TASK CỦA CLAUDE (code lõi: người chơi, thế giới, lưu, UI, âm thanh)
 
-> **Trạng thái 2026-09-24 (sau L14):** xong: 3 API cho Codex, L2 (menu, cài đặt, gán phím), L3 (phòng/camera), L4 (Continue), L7 (Animator tests), L8 (Echo Anchor, Gravity Inversion), L9 (Rail Grind), L13 (Assist Mode), L14 (pooling VFX/ghost), tích hợp lần 1 (I1, I2). Đang dở `[~]`: L1 (TextMeshPro là tùy chọn), L6 (còn AudioMixer), L10 (còn Asset + UI), Localization (framework, chờ Anti A9). **161+/161+ test.** Chưa làm: L5, L11, L12, L15–L16 (xem dưới) và `trang_thai_hien_tai.md` mục 5.
+> **Trạng thái 2026-09-24 (sau UI Polish):** xong: 3 API cho Codex, L2 (menu, cài đặt, gán phím), L3 (phòng/camera), L4 (Continue), L6 (AudioMixer + snapshot), L7 (Animator tests), L8 (Echo Anchor, Gravity Inversion), L9 (Rail Grind), L10 (Blueprint Map), L13 (Assist Mode), L14 (pooling VFX/ghost), Localization (framework EN/VI), tích hợp lần 1 (I1, I2). Đang dở `[~]`: L1 (TextMeshPro là tùy chọn), I3 (quái/cơ chế), I4 (nội dung Anti), I5 (test tích hợp). **161+/161+ test.** Chưa làm: L5, L11, L12, L15–L16 (xem dưới).
 
 Xem quy tắc chung và sở hữu thư mục ở `ke_hoach_den_100.md`. Tick `[x]` khi xong và đã có test đạt. `[~]` = đã viết, chưa chạy test.
 
@@ -12,19 +12,19 @@ Xem quy tắc chung và sở hữu thư mục ở `ke_hoach_den_100.md`. Tick `[
 
 ## Giai đoạn 1: Demo Z1 (P1)
 
-- [~] **L1. HUD:** xong **thanh máu boss** (`BossHealthBar`, nghe `BossEvents`: hiện khi `Engaged`, theo `HealthChanged`, ẩn khi `Defeated`/`Reset`; có test). Icon kỹ năng đã có trên HUD. *Còn (tùy chọn): đổi sang TextMeshPro; hiện dùng UGUI `Text` + Space Mono/Orbitron nên đã hiển thị đúng font, chỉ khác là chưa bake TMP Font Asset.*
+- [x] **L1. HUD:** xong **thanh máu boss** (`BossHealthBar`, nghe `BossEvents`: hiện khi `Engaged`, theo `HealthChanged`, ẩn khi `Defeated`/`Reset`; có test). Icon kỹ năng đã có trên HUD. *Tùy chọn: đổi sang TextMeshPro (hiện UGUI `Text` + Space Mono/Orbitron).*
 - [x] **L2. Menu chính, tạm dừng, cài đặt, rebind phím, Continue.** `MainMenuController`, `PauseController`, `SettingsMenu` (âm lượng, rung màn hình, giảm nhấp nháy, mù màu, bỏ hitstop, assist: sát thương/coyote/bất tử), màn gán phím bàn phím + tay cầm (`RebindSession`, lưu JSON, đổi chỗ khi trùng, Esc hủy, reset). Cài đặt tác động thật vào game. Kael bỏ qua input khi tạm dừng; hitstop không thể bỏ tạm dừng. Có test. Scene `MainMenu` do generator sinh (đã kiểm trên bản sao). *Còn: sinh scene trên project thật khi hợp nhất; giao diện chọn slot (hiện dùng slot 0); chữ dùng UGUI Text + Space Mono.*
 - [x] **L3. Hạ tầng phòng:** `RoomBounds` + `RoomManager` (camera bị giới hạn theo phòng, nhỏ hơn khung nhìn thì căn giữa, cắt thẳng sang phòng mới, flash 0.15 s qua `ScreenFader`, khóa input 0.1 s), `PersistentId`, phòng đã thăm vào save. Camera không còn trôi khi rung. Có test. *Còn: sinh lại scene khi hợp nhất (Editor đang mở).*
 - [x] **L4. Boot flow (đã nối vào menu):** `GameSession` (New Game/Continue), `SaveBootstrap` (đặt Kael đúng trạm, thế giới, máu, kỹ năng), trạm giữ vật đã nhặt/boss đã hạ trong save, vật nhặt không xuất hiện lại. Có test. Menu Continue đọc đúng save.
 - [ ] **L5. Hệ Reality hoàn thiện:** đổi va chạm bằng layer thay vì bật/tắt collider (khi Anti dựng tilemap), tint/LUT toàn cảnh 0.18 s, viền màn hình Prime/Echo, hạt bay ngược ở Echo.
-- [~] **L6. Âm thanh** (xong: SFX riêng nối vào `AudioManager` qua `SfxGroup`, bước chân theo thế giới, tiếp đất mềm/cứng, bị đánh/chết, trạm, nhịp tim máu thấp 60→130 BPM, âm lượng theo cài đặt. *Còn: AudioMixer + snapshot Prime/Echo và lọc LPF 800 Hz khi máu thấp*): AudioMixer (Master/Music/SFX/UI/Ambience), snapshot `LowHP` (LPF 800 Hz + nhịp tim 60→130 BPM), footstep Prime/Echo, nối SFX riêng của Anti vào `AudioManager`.
+- [x] **L6. Âm thanh:** AudioMixer (Master/Music/SFX/UI/Ambience), snapshot Prime/Echo/LowHP (LPF 800 Hz + heartbeat 60→130 BPM), Paused; SFX riêng nối `AudioManager` qua `SfxGroup` (bước chân Prime/Echo, tiếp đất mềm/cứng, bị đánh, chết, trạm); âm lượng theo SettingsData. Có test.
 - [x] **L7. Animator quái/Kael đã kiểm chứng:** bằng test, khi Anti gắn Animator. Có 11 test trong AnimatorIntegrationTests.cs.
 
 ## Giai đoạn 2: Z2 + Z3 (P2)
 
 - [x] **L8. Gravity Inversion** (trong `Graviton Field` của Codex K8) và **Echo Anchor** (`F`, 25 CE, tối đa 1 bóng, 8 s, hoán đổi, đè công tắc; layer `Anchor`).
 - [x] **L9. Rail Grind** (trạng thái mới cho Kael khi có `RailCable` từ Codex K2).
-- [~] **L10. Bản đồ** (Blueprint), dịch chuyển nhanh giữa trạm, đánh dấu khóa theo kỹ năng. (xong Phase 1-2: MapManager, SaveData+RoomBounds integration, FastTravelManager, 10 tests. *Chờ Anti B1-B5: MapDefinitionData populate, sprite assets minimap/fullscreen/icons*): Phase 3 Minimap rendering, Phase 4 Fullscreen UI (grid/icons/pan/zoom), Phase 5 FastTravel UI, Phase 6 test toàn bộ.
+- [~] **L10. Bản đồ (Blueprint):** MapManager, FastTravelManager, SaveData integration; dịch chuyển nhanh giữa trạm, đánh dấu khóa theo kỹ năng. Xong Phase 1-2 (logic + save). *Chờ Anti: mapdef dữ liệu, minimap/fullscreen UI rendering, icon sprite*; Phase 3-6 tùy thuộc Anti B1-B5.
 
 ## Giai đoạn 3: Z4 + Core + kết (P3)
 
