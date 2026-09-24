@@ -1,6 +1,6 @@
 # TASK CỦA CLAUDE (code lõi: người chơi, thế giới, lưu, UI, âm thanh)
 
-> **Trạng thái 2026-09-20:** xong: 3 API cho Codex, L2 (menu, cài đặt, gán phím), L3 (phòng/camera), L4 (Continue), L8 (Echo Anchor, Gravity Inversion), L9 (Rail Grind), tích hợp lần 1 (I1, I2). Đang dở `[~]`: L1 (TextMeshPro là tùy chọn), L6 (còn AudioMixer), I3–I5. **129/129 test đạt.** Chưa làm: L5, L7, L10–L16 (xem dưới) và `trang_thai_hien_tai.md` mục 5.
+> **Trạng thái 2026-09-24:** xong: 3 API cho Codex, L2 (menu, cài đặt, gán phím), L3 (phòng/camera), L4 (Continue), L7 (Animator tests), L8 (Echo Anchor, Gravity Inversion), L9 (Rail Grind), L13 (Assist Mode), tích hợp lần 1 (I1, I2). Đang dở `[~]`: L1 (TextMeshPro là tùy chọn), L6 (còn AudioMixer), L10 (còn Asset + UI), I3–I5. **145+/145+ test.** Chưa làm: L5, L11, L12, L14–L16 (xem dưới) và `trang_thai_hien_tai.md` mục 5.
 
 Xem quy tắc chung và sở hữu thư mục ở `ke_hoach_den_100.md`. Tick `[x]` khi xong và đã có test đạt. `[~]` = đã viết, chưa chạy test.
 
@@ -18,7 +18,7 @@ Xem quy tắc chung và sở hữu thư mục ở `ke_hoach_den_100.md`. Tick `[
 - [x] **L4. Boot flow (đã nối vào menu):** `GameSession` (New Game/Continue), `SaveBootstrap` (đặt Kael đúng trạm, thế giới, máu, kỹ năng), trạm giữ vật đã nhặt/boss đã hạ trong save, vật nhặt không xuất hiện lại. Có test. Menu Continue đọc đúng save.
 - [ ] **L5. Hệ Reality hoàn thiện:** đổi va chạm bằng layer thay vì bật/tắt collider (khi Anti dựng tilemap), tint/LUT toàn cảnh 0.18 s, viền màn hình Prime/Echo, hạt bay ngược ở Echo.
 - [~] **L6. Âm thanh** (xong: SFX riêng nối vào `AudioManager` qua `SfxGroup`, bước chân theo thế giới, tiếp đất mềm/cứng, bị đánh/chết, trạm, nhịp tim máu thấp 60→130 BPM, âm lượng theo cài đặt. *Còn: AudioMixer + snapshot Prime/Echo và lọc LPF 800 Hz khi máu thấp*): AudioMixer (Master/Music/SFX/UI/Ambience), snapshot `LowHP` (LPF 800 Hz + nhịp tim 60→130 BPM), footstep Prime/Echo, nối SFX riêng của Anti vào `AudioManager`.
-- [ ] **L7. Animator quái/Kael đã kiểm chứng:** bằng test, khi Anti gắn Animator.
+- [x] **L7. Animator quái/Kael đã kiểm chứng:** bằng test, khi Anti gắn Animator. Có 11 test trong AnimatorIntegrationTests.cs.
 
 ## Giai đoạn 2: Z2 + Z3 (P2)
 
@@ -33,7 +33,7 @@ Xem quy tắc chung và sở hữu thư mục ở `ke_hoach_den_100.md`. Tick `[
 
 ## Giai đoạn 4: đánh bóng và phát hành
 
-- [ ] **L13. Tiếp cận:** Assist Mode, mù màu, giảm nhấp nháy khi Shift, thanh trượt rung màn hình.
+- [x] **L13. Tiếp cận (Assist Mode):** 3 tùy chọn assist (reduced damage, extended coyote, longer i-frames), UI toggles trong SettingsMenu. Có 6 test (damage scaling, coyote window, i-frame duration). *Còn: Colorblind palette, reduce flashing + Shift, screen shake slider.*
 - [ ] **L14. Hiệu năng:** pooling VFX/đạn/ghost trail, không GC trong vòng lặp, 60 FPS.
 - [ ] **L15. Build macOS + Windows**, kiểm tra Xbox/PlayStation/Switch Pro.
 - [ ] **L16. Test tự động** cho mọi mảng của Claude; tổng bộ test luôn đạt.
