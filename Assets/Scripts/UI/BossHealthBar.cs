@@ -68,7 +68,7 @@ namespace EchoOfTheVoid.UI
             rect.anchoredPosition = new Vector2(0f, 70f);
             rect.sizeDelta = new Vector2(1000f, 90f);
 
-            _name = UiKit.CreateLabel(_root.transform, "", 30, font, UiKit.TextColor, TextAnchor.LowerCenter);
+            _name = UiKit.CreateLabel(_root.transform, "", UiKit.SizeTitle, font, UiKit.AccentBright, TextAnchor.LowerCenter);
             var nameRect = _name.rectTransform;
             nameRect.anchorMin = new Vector2(0f, 0.5f);
             nameRect.anchorMax = new Vector2(1f, 1f);

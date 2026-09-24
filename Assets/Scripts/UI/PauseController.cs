@@ -47,10 +47,10 @@ namespace EchoOfTheVoid.UI
 
             UiKit.EnsureEventSystem();
             _canvas = UiKit.CreateCanvas("PauseCanvas", 400);
-            var panel = UiKit.CreatePanel(_canvas.transform, "Pause", UiKit.Panel, new Vector2(620f, 520f));
-            UiKit.MakeVertical(panel, 18f, 34);
+            var panel = UiKit.CreatePanel(_canvas.transform, "Pause", UiKit.PanelDark, new Vector2(660f, 580f));
+            UiKit.MakeVertical(panel, 24f, 48);
 
-            UiKit.CreateLabel(panel, "PAUSED", 52, font, UiKit.Accent, height: 80f);
+            UiKit.CreateTitle(panel, "PAUSED", font);
             ResumeButton = UiKit.CreateButton(panel, "Resume", font, Resume);
             SettingsButton = UiKit.CreateButton(panel, "Settings", font, OpenSettings);
             QuitToMenuButton = UiKit.CreateButton(panel, "Quit to Menu", font, () => { Close(); GameFlow.QuitToMenu(); });
