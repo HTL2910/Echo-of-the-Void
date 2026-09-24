@@ -1,0 +1,64 @@
+{
+  "entries": [
+    {
+      "key": "ui.play",
+      "en": "Play",
+      "vi": "Chơi"
+    },
+    {
+      "key": "ui.continue",
+      "en": "Continue",
+      "vi": "Tiếp tục"
+    },
+    {
+      "key": "ui.settings",
+      "en": "Settings",
+      "vi": "Cài đặt"
+    },
+    {
+      "key": "ui.quit",
+      "en": "Quit",
+      "vi": "Thoát"
+    },
+    {
+      "key": "ui.back",
+      "en": "Back",
+      "vi": "Quay lại"
+    },
+    {
+      "key": "hud.health",
+      "en": "HP",
+      "vi": "HP"
+    },
+    {
+      "key": "hud.energy",
+      "en": "CE",
+      "vi": "CE"
+    },
+    {
+      "key": "dialogue.iris_intro",
+      "en": "[Iris dialogue intro - pending Anti A9]",
+      "vi": "[Hội thoại Iris intro - chờ Anti A9]"
+    },
+    {
+      "key": "monolith.entry_01",
+      "en": "[Memory Monolith #1 - pending Anti A9]",
+      "vi": "[Memory Monolith #1 - chờ Anti A9]"
+    },
+    {
+      "key": "ending.true",
+      "en": "[True ending - pending Anti A9]",
+      "vi": "[Kết thúc thật - chờ Anti A9]"
+    },
+    {
+      "key": "ending.echo",
+      "en": "[Echo ending - pending Anti A9]",
+      "vi": "[Kết thúc Echo - chờ Anti A9]"
+    },
+    {
+      "key": "ending.void",
+      "en": "[Void ending - pending Anti A9]",
+      "vi": "[Kết thúc Void - chờ Anti A9]"
+    }
+  ]
+}
