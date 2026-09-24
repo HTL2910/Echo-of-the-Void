@@ -64,10 +64,10 @@ namespace EchoOfTheVoid.UI
         public void ShowMain()
         {
             Session.Cancel();
-            Rebuild(new Vector2(1100f, 940f));
+            Rebuild(new Vector2(1100f, 960f));
             var s = SettingsService.Current;
 
-            UiKit.CreateLabel(_panel, "SETTINGS", 44, _font, UiKit.Accent, height: 64f);
+            UiKit.CreateHeading(_panel, "SETTINGS", _font);
             MasterSlider = UiKit.CreateSlider(_panel, "Master volume", s.masterVolume, _font, v => { s.masterVolume = v; SettingsService.Apply(); });
             MusicSlider = UiKit.CreateSlider(_panel, "Music volume", s.musicVolume, _font, v => { s.musicVolume = v; SettingsService.Apply(); });
             UiKit.CreateSlider(_panel, "Effects volume", s.sfxVolume, _font, v => { s.sfxVolume = v; SettingsService.Apply(); });
@@ -106,7 +106,8 @@ namespace EchoOfTheVoid.UI
             Rebuild(new Vector2(1100f, 1010f));
             _bindingButtons.Clear();
 
-            UiKit.CreateLabel(_panel, "CONTROLS   (click, then press the new key)", 34, _font, UiKit.Accent, height: 56f);
+            UiKit.CreateTitle(_panel, "CONTROLS", _font);
+            UiKit.CreateBody(_panel, "Click button, then press the new key", _font, UiKit.Muted);
             var header = UiKit.CreateRow(_panel, 36f);
             UiKit.CreateLabel(header, "Action", 22, _font, UiKit.Muted, TextAnchor.MiddleLeft).GetComponent<LayoutElement>().preferredWidth = 260f;
             UiKit.CreateLabel(header, "Key 1", 22, _font, UiKit.Muted).GetComponent<LayoutElement>().preferredWidth = 200f;

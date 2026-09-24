@@ -34,11 +34,11 @@ namespace EchoOfTheVoid.UI
             if (_canvas != null) Destroy(_canvas.gameObject);
             _canvas = UiKit.CreateCanvas("MainMenuCanvas", 100);
 
-            var panel = UiKit.CreatePanel(_canvas.transform, "Menu", new Color(0.03f, 0.05f, 0.09f, 0.6f), new Vector2(760f, 760f));
-            UiKit.MakeVertical(panel, 18f, 34);
+            var panel = UiKit.CreatePanel(_canvas.transform, "Menu", UiKit.PanelDark, new Vector2(800f, 820f));
+            UiKit.MakeVertical(panel, 24f, 48);
 
-            UiKit.CreateLabel(panel, "ECHO OF THE VOID", 60, font, UiKit.Accent, height: 96f);
-            UiKit.CreateLabel(panel, "Two realities. One Voidweaver.", 24, font, UiKit.Muted, height: 44f);
+            UiKit.CreateHeading(panel, "ECHO OF THE VOID", font);
+            UiKit.CreateBody(panel, "Two realities. One Voidweaver.", font, UiKit.Muted);
 
             bool hasSave = SaveService.TryLoad(saveSlot, out _);
             ContinueButton = UiKit.CreateButton(panel, "Continue", font, OnContinue);
