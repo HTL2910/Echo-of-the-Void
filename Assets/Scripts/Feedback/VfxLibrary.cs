@@ -17,9 +17,9 @@ namespace EchoOfTheVoid.Feedback
     }
 
     /// <summary>
-    /// Plays one-shot particle prefabs. Gameplay code only says <c>VfxLibrary.Play(id, position)</c>; missing library
-    /// or missing prefab is a silent no-op, so the game runs (without the effect) when art is not in yet.
-    /// The prefabs destroy themselves (Stop Action = Destroy).
+    /// Plays one-shot particle prefabs via object pooling (L14 Performance).
+    /// Gameplay code only says <c>VfxLibrary.Play(id, position)</c>; missing library or prefab is a silent no-op.
+    /// Each VFX prefab has 2-3 pooled instances reused via SetActive.
     /// </summary>
     public class VfxLibrary : MonoBehaviour
     {
@@ -29,6 +29,7 @@ namespace EchoOfTheVoid.Feedback
 
         private RealmType _lastRealm = RealmType.Prime;
         private Transform _player;
+        private ObjectPool<ParticleSystem>[] _pools;
 
         public static bool Has(VfxId id) => Instance != null && Instance.Get(id) != null;
 
@@ -42,6 +43,10 @@ namespace EchoOfTheVoid.Feedback
             int index = (int)id;
             if (prefabs == null || prefabs.Length <= index) System.Array.Resize(ref prefabs, System.Enum.GetValues(typeof(VfxId)).Length);
             prefabs[index] = prefab;
+
+            _pools ??= new ObjectPool<ParticleSystem>[prefabs.Length];
+            if (_pools[index] != null) _pools[index].Clear();
+            _pools[index] = null;
         }
 
         private GameObject Get(VfxId id)
@@ -58,6 +63,7 @@ namespace EchoOfTheVoid.Feedback
                 return;
             }
             Instance = this;
+            _pools = new ObjectPool<ParticleSystem>[8];
         }
 
         private void OnEnable()
@@ -72,7 +78,13 @@ namespace EchoOfTheVoid.Feedback
 
         private void OnDestroy()
         {
-            if (Instance == this) Instance = null;
+            if (Instance == this)
+            {
+                if (_pools != null)
+                    foreach (var pool in _pools)
+                        pool?.Clear();
+                Instance = null;
+            }
         }
 
         private void Start()
@@ -85,18 +97,37 @@ namespace EchoOfTheVoid.Feedback
             var prefab = Get(id);
             if (prefab == null) return;
 
-            var instance = Instantiate(prefab, position, Quaternion.identity);
+            int index = (int)id;
+            if (_pools[index] == null)
+            {
+                _pools[index] = new ObjectPool<ParticleSystem>(prefab, 2);
+            }
+
+            var ps = _pools[index].Get();
+            ps.transform.position = position;
+            ps.transform.rotation = Quaternion.identity;
+
             if (flipX)
             {
-                Vector3 scale = instance.transform.localScale;
-                scale.x = -scale.x;
-                instance.transform.localScale = scale;
+                Vector3 scale = ps.transform.localScale;
+                scale.x = -Mathf.Abs(scale.x);
+                ps.transform.localScale = scale;
             }
+
+            ps.Play();
+            StartCoroutine(StopAndReturn(ps, _pools[index]));
+        }
+
+        private IEnumerator StopAndReturn(ParticleSystem ps, ObjectPool<ParticleSystem> pool)
+        {
+            if (ps == null) yield break;
+            yield return new WaitForSeconds(ps.main.duration + ps.main.startLifetimeMultiplier);
+            ps.Stop();
+            pool.Return(ps);
         }
 
         private void HandleRealmSwitched(RealmType realm)
         {
-            // The manager also broadcasts the initial realm on start-up: only a real change gets a shockwave
             if (realm == _lastRealm) return;
             _lastRealm = realm;
 

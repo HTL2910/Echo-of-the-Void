@@ -11,6 +11,7 @@ namespace EchoOfTheVoid.Feedback
         [SerializeField] private float ghostLifetime = 0.25f;
 
         private Coroutine _trailRoutine;
+        private static ObjectPool<GhostInstance> _pool;
 
         private void Awake()
         {
@@ -49,23 +50,54 @@ namespace EchoOfTheVoid.Feedback
         {
             if (sourceRenderer == null || sourceRenderer.sprite == null) return;
 
-            GameObject ghostObj = new GameObject("GhostTrail_Clone");
+            if (_pool == null)
+            {
+                var ghostPrefab = new GameObject("GhostTrail_Clone");
+                ghostPrefab.AddComponent<SpriteRenderer>();
+                ghostPrefab.AddComponent<GhostInstance>();
+                _pool = new ObjectPool<GhostInstance>(ghostPrefab, 20);
+                Destroy(ghostPrefab);
+            }
+
+            var ghost = _pool.Get();
             Transform source = sourceRenderer.transform;
-            ghostObj.transform.position = source.position;
-            ghostObj.transform.rotation = source.rotation;
-            ghostObj.transform.localScale = source.lossyScale;
+            ghost.transform.position = source.position;
+            ghost.transform.rotation = source.rotation;
+            ghost.transform.localScale = source.lossyScale;
 
-            SpriteRenderer sr = ghostObj.AddComponent<SpriteRenderer>();
-            sr.sprite = sourceRenderer.sprite;
-            sr.color = baseColor;
-            sr.sortingLayerID = sourceRenderer.sortingLayerID;
-            sr.sortingOrder = sourceRenderer.sortingOrder - 1;
-            sr.flipX = sourceRenderer.flipX;
+            ghost.Configure(sourceRenderer.sprite, baseColor, sourceRenderer.sortingLayerID, sourceRenderer.sortingOrder - 1, sourceRenderer.flipX, ghostLifetime, _pool);
+        }
+    }
 
-            StartCoroutine(FadeAndDestroy(ghostObj, sr, baseColor, ghostLifetime));
+    public class GhostInstance : MonoBehaviour
+    {
+        private SpriteRenderer _sr;
+        private ObjectPool<GhostInstance> _pool;
+        private Coroutine _fadeRoutine;
+
+        private void Awake()
+        {
+            _sr = GetComponent<SpriteRenderer>();
+            if (_sr == null) _sr = gameObject.AddComponent<SpriteRenderer>();
         }
 
-        private IEnumerator FadeAndDestroy(GameObject obj, SpriteRenderer sr, Color startColor, float lifetime)
+        public void Configure(Sprite sprite, Color color, int sortingLayerId, int sortingOrder, bool flipX, float lifetime, ObjectPool<GhostInstance> pool)
+        {
+            _pool = pool;
+            _sr.sprite = sprite;
+            _sr.color = color;
+            _sr.sortingLayerID = sortingLayerId;
+            _sr.sortingOrder = sortingOrder;
+
+            var scale = transform.localScale;
+            scale.x = flipX ? -Mathf.Abs(scale.x) : Mathf.Abs(scale.x);
+            transform.localScale = scale;
+
+            if (_fadeRoutine != null) StopCoroutine(_fadeRoutine);
+            _fadeRoutine = StartCoroutine(FadeAndReturn(color, lifetime));
+        }
+
+        private IEnumerator FadeAndReturn(Color startColor, float lifetime)
         {
             float elapsed = 0f;
             while (elapsed < lifetime)
@@ -74,11 +106,11 @@ namespace EchoOfTheVoid.Feedback
                 float alpha = Mathf.Lerp(startColor.a, 0f, elapsed / lifetime);
                 Color c = startColor;
                 c.a = alpha;
-                if (sr != null) sr.color = c;
+                _sr.color = c;
                 yield return null;
             }
 
-            if (obj != null) Destroy(obj);
+            if (_pool != null) _pool.Return(this);
         }
     }
 }
