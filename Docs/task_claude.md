@@ -24,7 +24,7 @@ Xem quy tắc chung và sở hữu thư mục ở `ke_hoach_den_100.md`. Tick `[
 
 - [x] **L8. Gravity Inversion** (trong `Graviton Field` của Codex K8) và **Echo Anchor** (`F`, 25 CE, tối đa 1 bóng, 8 s, hoán đổi, đè công tắc; layer `Anchor`).
 - [x] **L9. Rail Grind** (trạng thái mới cho Kael khi có `RailCable` từ Codex K2).
-- [ ] **L10. Bản đồ** (Blueprint), dịch chuyển nhanh giữa trạm, đánh dấu khóa theo kỹ năng.
+- [~] **L10. Bản đồ** (Blueprint), dịch chuyển nhanh giữa trạm, đánh dấu khóa theo kỹ năng. (xong Phase 1-2: MapManager, SaveData+RoomBounds integration, FastTravelManager, 10 tests. *Chờ Anti B1-B5: MapDefinitionData populate, sprite assets minimap/fullscreen/icons*): Phase 3 Minimap rendering, Phase 4 Fullscreen UI (grid/icons/pan/zoom), Phase 5 FastTravel UI, Phase 6 test toàn bộ.
 
 ## Giai đoạn 3: Z4 + Core + kết (P3)
 
