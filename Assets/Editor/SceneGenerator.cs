@@ -161,7 +161,7 @@ namespace EchoOfTheVoid.Editor
             col.size = new Vector2(0.875f, 1.625f);
 
             // Sprite and Animator live on Visual child
-            Sprite kaelSprite = LoadSprite("Assets/Art/Sprites/Kael/spr_kael_idle_0.png") ?? boxSprite;
+            Sprite kaelSprite = LoadSprite("Assets/Art/Sprites/Kael/spr_kael_sheet_HD.png") ?? LoadSprite("Assets/Art/Sprites/Kael/spr_kael_idle_0.png") ?? boxSprite;
             var visual = new GameObject("Visual");
             visual.transform.SetParent(playerObj.transform, false);
             visual.transform.localScale = Vector3.one;

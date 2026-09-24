@@ -163,6 +163,22 @@ namespace EchoOfTheVoid.Tests
         }
 
         [UnityTest]
+        public IEnumerator ReconfigureWhileEffectIsActive_DoesNotAccessDestroyedParticle()
+        {
+            var particle = _prefab.AddComponent<ParticleSystem>();
+            var main = particle.main;
+            main.duration = 0.01f;
+            main.startLifetime = 0.01f;
+
+            _library.Configure(VfxId.ImpactClean, _prefab);
+            VfxLibrary.Play(VfxId.ImpactClean, Vector3.zero);
+            yield return null;
+
+            _library.Configure(VfxId.ImpactClean, null);
+            yield return new WaitForSeconds(0.1f);
+        }
+
+        [UnityTest]
         public IEnumerator ShiftWave_OnlyOnARealChange_AtKaelsPosition()
         {
             _library.Configure(VfxId.ShiftWave, _prefab);

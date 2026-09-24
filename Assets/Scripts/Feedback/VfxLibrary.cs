@@ -123,6 +123,7 @@ namespace EchoOfTheVoid.Feedback
         {
             if (ps == null) yield break;
             yield return new WaitForSeconds(ps.main.duration + ps.main.startLifetimeMultiplier);
+            if (ps == null) yield break;
             ps.Stop();
             pool.Return(ps);
         }

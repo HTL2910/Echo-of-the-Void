@@ -10,6 +10,7 @@ namespace EchoOfTheVoid.Enemies
     /// Fires an energy beam every 2.5s (20 dmg).
     /// In Prime Realm: Beam damages player.
     /// In Echo Realm: Beam transforms into a usable RailCable for grinding.
+    /// Enhanced with Arc Sweeping Beam and Resonance Pulse Barrier skills.
     /// </summary>
     public class PrismSentry : EnemyBase
     {
@@ -20,13 +21,23 @@ namespace EchoOfTheVoid.Enemies
         [SerializeField] private float beamDuration = 1.0f;
         [SerializeField] private int beamDamage = 20;
 
+        [Header("Enhanced Sentry Skills")]
+        [SerializeField] private bool enableSweepingBeam = false;
+        [SerializeField] private float sweepAngle = 20f;
+        [SerializeField] private bool enablePulseBarrier = true;
+        [SerializeField] private float pulseBarrierCooldown = 3.5f;
+        [SerializeField] private float pulseRadius = 2.0f;
+        [SerializeField] private int pulseDamage = 12;
+
         [Header("Components")]
         [SerializeField] private RailCable railCable;
         [SerializeField] private LineRenderer beamLineRenderer;
 
         private float _fireTimer;
+        private float _pulseTimer;
         private bool _isFiring;
         private LayerMask _hitMask;
+        private float _beamTimeElapsed;
 
         public bool IsFiring => _isFiring;
         public RailCable Cable => railCable;
@@ -57,6 +68,7 @@ namespace EchoOfTheVoid.Enemies
             base.Start();
             customRealm = RealmType.Echo;
             _fireTimer = fireInterval;
+            _pulseTimer = 1.5f;
             UpdateBeamState();
         }
 
@@ -76,6 +88,14 @@ namespace EchoOfTheVoid.Enemies
             }
 
             _fireTimer -= Time.deltaTime;
+            if (_pulseTimer > 0f) _pulseTimer -= Time.deltaTime;
+
+            // Skill: Resonance Pulse Barrier if player tries to hug the turret
+            if (enablePulseBarrier && _pulseTimer <= 0f)
+            {
+                CheckPulseBarrier();
+            }
+
             if (_fireTimer <= 0f && !_isFiring)
             {
                 StartCoroutine(FireBeamRoutine());
@@ -83,7 +103,28 @@ namespace EchoOfTheVoid.Enemies
 
             if (_isFiring)
             {
+                _beamTimeElapsed += Time.deltaTime;
                 UpdateBeamBehavior();
+            }
+        }
+
+        private void CheckPulseBarrier()
+        {
+            Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, pulseRadius);
+            foreach (var hit in hits)
+            {
+                if (hit != null && hit.CompareTag("Player"))
+                {
+                    var damageable = hit.GetComponentInParent<IDamageable>();
+                    if (damageable != null)
+                    {
+                        Vector2 knockback = (hit.transform.position - transform.position).normalized * 7f;
+                        DamageInfo info = new DamageInfo(pulseDamage, transform.position, knockback, EntityRealm, attacker: gameObject);
+                        damageable.TakeDamage(info);
+                        _pulseTimer = pulseBarrierCooldown;
+                        break;
+                    }
+                }
             }
         }
 
@@ -99,6 +140,7 @@ namespace EchoOfTheVoid.Enemies
         private IEnumerator FireBeamRoutine()
         {
             _isFiring = true;
+            _beamTimeElapsed = 0f;
             UpdateBeamState();
 
             yield return new WaitForSeconds(beamDuration);
@@ -112,6 +154,14 @@ namespace EchoOfTheVoid.Enemies
         {
             Vector2 start = transform.position;
             Vector2 dir = beamDirection.normalized;
+
+            if (enableSweepingBeam && beamDuration > 0f)
+            {
+                float progress = Mathf.Clamp01(_beamTimeElapsed / beamDuration);
+                float angle = Mathf.Sin(progress * Mathf.PI) * sweepAngle;
+                dir = Quaternion.Euler(0, 0, angle) * dir;
+            }
+
             Vector2 end = start + dir * beamLength;
 
             RaycastHit2D hit = Physics2D.Raycast(start, dir, beamLength, _hitMask);
