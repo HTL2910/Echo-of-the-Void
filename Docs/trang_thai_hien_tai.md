@@ -122,3 +122,21 @@ Cấu trúc prefab bắt buộc (Kael, quái, boss, cơ chế): **root scale (1,
 | `yeu_cau_giua_agent.md` / `yeu_cau_tu_anti.md` | Nơi các bên xin nhau đổi file |
 | `ban_giao/` | Bản bàn giao từng task và kết quả tích hợp |
 | 10 tài liệu gốc (`b_ng_...`, `c_t_...`, ...) | Nguồn ý tưởng ban đầu; spec đã hợp nhất, khi mâu thuẫn thì spec thắng |
+
+## 10. Bộ khung Claude Code Game Studios (đã cài, dùng ở các phiên sau)
+
+Nguồn: <https://github.com/donchitos/claude-code-game-studios> (MIT), cài vào `.claude/` ngày 2026-09-20. Chi tiết nguồn/commit: `.claude/CCGS-SOURCE.md`. **Chỉ Claude Code đọc `.claude/` và `CLAUDE.md`**; Codex và Anti vẫn làm theo `Docs/`.
+
+**Có gì:** 38 agent chuyên môn (đã bỏ Godot, Unreal, mạng), 73 skill (lệnh `/`), 11 hook, 10 luật theo thư mục, 41 mẫu tài liệu, bộ tham chiếu API Unity (`Docs/engine-reference/unity/`). Mở **phiên Claude Code mới** để các skill và `CLAUDE.md` được nạp.
+
+**Đã chỉnh cho dự án này:**
+- `CLAUDE.md` mới (ngắn) nhập `trang_thai_hien_tai.md` và `technical-preferences.md`. **Không dùng** giao thức "hỏi trước mỗi lần ghi file" của bản gốc cho việc code đã được yêu cầu rõ; giao thức Câu hỏi → Lựa chọn → Quyết định → Nháp → Duyệt chỉ áp dụng khi thiết kế (skill `/brainstorm`, `/design-system`...).
+- `.claude/docs/technical-preferences.md` đã điền cho Unity (quy ước tên, hiệu năng, test, mẫu cấm dùng rút từ các lỗi đã gặp). `directory-structure.md` ánh xạ `src/`→`Assets/Scripts/`, `docs/`→`Docs/`.
+- Luật theo thư mục trỏ sang `Assets/Scripts/**`, `Assets/Tests/**`. `production/stage.txt = Production`, `production/review-mode.txt = lean`.
+- **Hook đang bật** (`.claude/settings.json`): đầu phiên in nhánh/commit gần nhất; `validate-commit` **chỉ cảnh báo** (thiếu tiền tố `[claude]/[codex]/[anti]`, file ngoài phạm vi qua `Tools/check_ownership.py`, tag chưa khai báo, TODO không chủ); thông báo macOS khi cần bạn; ghi log agent vào `production/session-logs/` (gitignore); status line hiện `ctx% | model | stage`.
+- Quyền: cho phép tự chạy các lệnh git đọc, `ls`, `Tools/run_tests_isolated.sh`, `Tools/check_ownership.py`; **cấm** `rm -rf`, `git push --force`, `git reset --hard`, `git clean -f`, `sudo`, đọc `.env`. (Quy tắc cấm `rm -rf` đã tự chặn một lệnh thử của tôi khi cài: đúng thiết kế.)
+- Bỏ hook `validate-assets` (bản gốc ép tên file chữ thường trong `assets/`, trái quy ước PascalCase của Unity).
+
+**Skill đáng dùng cho mình:** `/help` (hỏi đang ở đâu, làm gì tiếp), `/project-stage-detect`, `/adopt` (rà soát tài liệu hiện có theo mẫu của bộ khung; nên chạy một lần khi bạn muốn chuẩn hóa `Docs/`), `/architecture-decision` (ADR vào `Docs/architecture/`), `/sprint-plan` + `/sprint-status`, `/gate-check` (cổng giữa các giai đoạn, khớp với `tich_hop.md` §4), `/qa-plan`, `/playtest-report`, `/team-level` (thiết kế phòng), `/team-combat`, `/team-audio`, `/team-polish`, `/release-checklist`, `/code-review`.
+
+**Lưu ý:** hook chạy tự động trên máy bạn; đã đọc hết mã nguồn hook, không có lệnh mạng, `sudo` hay xóa. Nâng cấp lên bản mới: đọc `UPGRADING.md` của repo gốc, **đừng chép đè** (đã chỉnh sửa). Skill dùng tên thư mục chữ thường `docs/`, `design/`: trên macOS `docs/` trùng `Docs/` nên vẫn đúng.

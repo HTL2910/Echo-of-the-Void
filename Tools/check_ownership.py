@@ -36,7 +36,7 @@ ALLOWED = {
         "Assets/Scripts/Environment/",  # trừ Mechanics/ (kiểm bên dưới)
         "Assets/Editor/", "Assets/Tests/", "Assets/Scenes/", "Assets/Prefabs/Levels/", "Assets/Prefabs/Player/",
         "ProjectSettings/", "Packages/", "Tools/",
-        "Docs/", ".gitignore",
+        "Docs/", ".gitignore", ".claude/", "CLAUDE.md", "production/", "design/", "prototypes/",
     ],
 }
 # Vùng độc quyền: Claude không được vào trừ khi commit có [integrate]

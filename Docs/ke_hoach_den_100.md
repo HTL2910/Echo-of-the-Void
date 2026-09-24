@@ -18,7 +18,7 @@ Tiến độ dưới đây là **ước lượng theo khối lượng công vi�
 |---|---|
 | `Assets/Scripts/Player/**`, `Core/**`, `UI/**`, `Save/**`, `Settings/**`, `Feedback/**` | **Claude** |
 | `Assets/Scripts/Environment/**` (các file **đã có**), `Assets/Editor/SceneGenerator.cs`, `AssetSetupUtility.cs` | **Claude** |
-| `ProjectSettings/**`, `Packages/**`, `*.asmdef`, `Docs/echo_of_the_void_master_spec.md` | **Claude** |
+| `ProjectSettings/**`, `Packages/**`, `*.asmdef`, `Docs/echo_of_the_void_master_spec.md`, `.claude/**`, `CLAUDE.md`, `production/**` | **Claude** |
 | `Assets/Scripts/Enemies/**`, `Assets/Scripts/Combat/**` | **Codex** |
 | `Assets/Scripts/Bosses/**` (thư mục mới) | **Codex** |
 | `Assets/Scripts/Environment/Mechanics/**` (thư mục mới: gai, cổng, đòn bẩy...) | **Codex** |
