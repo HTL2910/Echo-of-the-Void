@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using EchoOfTheVoid.Core;
+using EchoOfTheVoid.Environment;
 using EchoOfTheVoid.Player;
 using EchoOfTheVoid.Save;
 
@@ -35,14 +36,19 @@ namespace EchoOfTheVoid.UI.Map
 
         private void OnEnable()
         {
-            BossEvents.BossDefeated += OnBossDefeated;
+            BossEvents.Defeated += OnBossDefeated;
             GameFlow.OnGameLoaded += OnGameLoaded;
         }
 
         private void OnDisable()
         {
-            BossEvents.BossDefeated -= OnBossDefeated;
+            BossEvents.Defeated -= OnBossDefeated;
             GameFlow.OnGameLoaded -= OnGameLoaded;
+        }
+
+        private void OnDestroy()
+        {
+            if (_instance == this) _instance = null;
         }
 
         private void OnBossDefeated(string bossId)
@@ -85,10 +91,10 @@ namespace EchoOfTheVoid.UI.Map
             var session = GameSession.Current;
             if (session != null)
             {
-                session.SaveData.checkpointId = stationId;
-                session.SaveData.checkpointX = targetPos.x;
-                session.SaveData.checkpointY = targetPos.y;
-                SaveService.Save(session.CurrentSlot, session.SaveData);
+                session.checkpointId = stationId;
+                session.checkpointX = targetPos.x;
+                session.checkpointY = targetPos.y;
+                SaveService.Save(session, GameSession.ActiveSlot);
             }
 
             // Unpause if map was open

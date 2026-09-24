@@ -43,6 +43,11 @@ namespace EchoOfTheVoid.UI.Map
             GameFlow.OnGameLoaded -= OnGameLoaded;
         }
 
+        private void OnDestroy()
+        {
+            if (_instance == this) _instance = null;
+        }
+
         private void OnGameLoaded(SaveData data)
         {
             _discoveredRooms.Clear();
@@ -66,8 +71,8 @@ namespace EchoOfTheVoid.UI.Map
                 var current = GameSession.Current;
                 if (current != null)
                 {
-                    current.SaveData.visitedRooms.Add(roomId);
-                    SaveService.Save(current.CurrentSlot, current.SaveData);
+                    current.visitedRooms.Add(roomId);
+                    SaveService.Save(current, GameSession.ActiveSlot);
                 }
             }
         }
@@ -81,8 +86,8 @@ namespace EchoOfTheVoid.UI.Map
                 var current = GameSession.Current;
                 if (current != null)
                 {
-                    current.SaveData.unlockedDoorIds.Add(doorId);
-                    SaveService.Save(current.CurrentSlot, current.SaveData);
+                    current.unlockedDoorIds.Add(doorId);
+                    SaveService.Save(current, GameSession.ActiveSlot);
                 }
             }
         }

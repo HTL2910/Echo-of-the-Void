@@ -1,7 +1,9 @@
 using UnityEngine;
 using UnityEngine.UI;
 using EchoOfTheVoid.Core;
+using EchoOfTheVoid.Environment;
 using EchoOfTheVoid.Player;
+using EchoOfTheVoid.Save;
 
 namespace EchoOfTheVoid.UI.Map
 {
@@ -59,7 +61,7 @@ namespace EchoOfTheVoid.UI.Map
             if (player == null || mapDefinition == null) return;
 
             // Find current room
-            var currentRoom = RoomManager.GetRoomAt(player.transform.position);
+            var currentRoom = RoomManager.Instance != null ? RoomManager.Instance.CurrentRoom : null;
             if (currentRoom == null) return;
 
             // Only redraw if room changed
@@ -80,7 +82,7 @@ namespace EchoOfTheVoid.UI.Map
         {
             var player = FindObjectOfType<PlayerController>();
             if (player == null) return "";
-            var room = RoomManager.GetRoomAt(player.transform.position);
+            var room = RoomManager.Instance != null ? RoomManager.Instance.CurrentRoom : null;
             return room != null ? room.RoomId : "";
         }
     }

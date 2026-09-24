@@ -7,7 +7,7 @@ namespace EchoOfTheVoid.Core
     /// Generic object pool for reusing GameObjects without allocating new ones (L14 Performance).
     /// Pre-allocates N instances and reuses via SetActive(true/false).
     /// </summary>
-    public class ObjectPool<T> where T : MonoBehaviour
+    public class ObjectPool<T> where T : Component
     {
         private readonly Queue<T> _available = new Queue<T>();
         private readonly HashSet<T> _active = new HashSet<T>();

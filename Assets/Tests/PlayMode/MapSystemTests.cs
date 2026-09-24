@@ -1,5 +1,7 @@
+using System.IO;
 using NUnit.Framework;
 using UnityEngine;
+using EchoOfTheVoid.Core;
 using EchoOfTheVoid.Save;
 using EchoOfTheVoid.UI.Map;
 using EchoOfTheVoid.Environment;
@@ -10,33 +12,43 @@ namespace EchoOfTheVoid.Tests
     public class MapSystemTests
     {
         private GameObject _mapManagerObj;
+        private GameObject _fastTravelManagerObj;
         private MapManager _mapManager;
+        private TestWorld _world;
+        private string _saveDir;
 
         [SetUp]
         public void Setup()
         {
             GameSession.Reset();
-            SaveService.Reload();
+            _saveDir = Path.Combine(Path.GetTempPath(), "eotv_map_test_" + System.Guid.NewGuid().ToString("N"));
+            SaveService.DirectoryOverride = _saveDir;
 
             _mapManagerObj = new GameObject("MapManager");
             _mapManager = _mapManagerObj.AddComponent<MapManager>();
+            _fastTravelManagerObj = new GameObject("FastTravelManager");
+            _fastTravelManagerObj.AddComponent<FastTravelManager>();
         }
 
         [TearDown]
         public void Teardown()
         {
-            Object.Destroy(_mapManagerObj);
+            Object.DestroyImmediate(_mapManagerObj);
+            Object.DestroyImmediate(_fastTravelManagerObj);
+            _world?.Dispose();
             GameSession.Reset();
+            SaveService.DirectoryOverride = null;
+            if (Directory.Exists(_saveDir)) Directory.Delete(_saveDir, true);
         }
 
         [Test]
         public void DiscoverRoom_AddsToVisitedRooms()
         {
             var session = GameSession.Current;
-            Assert.That(session.SaveData.visitedRooms, Is.Empty);
+            Assert.That(session.visitedRooms, Is.Empty);
 
             MapManager.DiscoverRoom("Z1_R01");
-            Assert.That(session.SaveData.visitedRooms, Contains.Item("Z1_R01"));
+            Assert.That(session.visitedRooms, Contains.Item("Z1_R01"));
         }
 
         [Test]
@@ -46,17 +58,17 @@ namespace EchoOfTheVoid.Tests
             MapManager.DiscoverRoom("Z1_R01");
 
             var session = GameSession.Current;
-            Assert.That(session.SaveData.visitedRooms.Count, Is.EqualTo(1));
+            Assert.That(session.visitedRooms.Count, Is.EqualTo(1));
         }
 
         [Test]
         public void UnlockDoor_AddsToUnlockedDoors()
         {
             var session = GameSession.Current;
-            Assert.That(session.SaveData.unlockedDoorIds, Is.Empty);
+            Assert.That(session.unlockedDoorIds, Is.Empty);
 
             MapManager.UnlockDoor("Z1_Door_01");
-            Assert.That(session.SaveData.unlockedDoorIds, Contains.Item("Z1_Door_01"));
+            Assert.That(session.unlockedDoorIds, Contains.Item("Z1_Door_01"));
         }
 
         [Test]
@@ -64,7 +76,7 @@ namespace EchoOfTheVoid.Tests
         {
             MapManager.DiscoverRoom("Z1_R01");
             MapManager.DiscoverRoom("Z1_R02");
-            var data1 = GameSession.Current.SaveData;
+            var data1 = GameSession.Current;
 
             // Simulate load from save
             var data2 = new SaveData
@@ -110,13 +122,13 @@ namespace EchoOfTheVoid.Tests
 
             // Simulate overlap
             var session = GameSession.Current;
-            Assert.That(session.SaveData.visitedRooms, Is.Empty);
+            Assert.That(session.visitedRooms, Is.Empty);
 
             // Manually trigger (since Physics2D.OverlapPoint may not work in PlayMode without proper setup)
             roomBounds.GetComponent<BoxCollider2D>().bounds.Contains(player.transform.position);
             MapManager.DiscoverRoom("Z1_R01");
 
-            Assert.That(session.SaveData.visitedRooms, Contains.Item("Z1_R01"));
+            Assert.That(session.visitedRooms, Contains.Item("Z1_R01"));
 
             Object.Destroy(player);
             Object.Destroy(roomObj);
@@ -131,7 +143,7 @@ namespace EchoOfTheVoid.Tests
         [Test]
         public void FastTravel_UnlocksAfterZ2Boss()
         {
-            BossEvents.RaiseBossDefeated("Z2_Boss_Keeper");
+            BossEvents.RaiseDefeated("Z2_Boss_Keeper");
             Assert.That(FastTravelManager.IsUnlocked, Is.True);
         }
 
@@ -139,18 +151,20 @@ namespace EchoOfTheVoid.Tests
         public void FastTravel_UpdatesCheckpointOnTravel()
         {
             FastTravelManager.SetUnlocked(true);
+            _world = TestWorld.Create(Vector2.zero);
             var stationObj = new GameObject("Station");
             stationObj.transform.position = new Vector3(10f, 5f, 0f);
+            stationObj.AddComponent<BoxCollider2D>().isTrigger = true;
             var station = stationObj.AddComponent<ChronoStation>();
             station.Configure("Z1_Station_01");
 
             var session = GameSession.Current;
-            var initialPos = session.SaveData.checkpointX;
+            var initialPos = session.checkpointX;
 
             FastTravelManager.TravelToStation("Z1_Station_01");
 
-            Assert.That(session.SaveData.checkpointId, Is.EqualTo("Z1_Station_01"));
-            Assert.That(session.SaveData.checkpointX, Is.Not.EqualTo(initialPos));
+            Assert.That(session.checkpointId, Is.EqualTo("Z1_Station_01"));
+            Assert.That(session.checkpointX, Is.Not.EqualTo(initialPos));
 
             Object.Destroy(stationObj);
         }
@@ -160,11 +174,11 @@ namespace EchoOfTheVoid.Tests
         {
             FastTravelManager.SetUnlocked(false);
             var session = GameSession.Current;
-            var initialCheckpoint = session.SaveData.checkpointId;
+            var initialCheckpoint = session.checkpointId;
 
             FastTravelManager.TravelToStation("Z1_Station_01");
 
-            Assert.That(session.SaveData.checkpointId, Is.EqualTo(initialCheckpoint));
+            Assert.That(session.checkpointId, Is.EqualTo(initialCheckpoint));
         }
     }
 }

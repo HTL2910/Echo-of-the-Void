@@ -134,7 +134,7 @@ namespace EchoOfTheVoid.Tests
         {
             var list = new List<GameObject>();
             foreach (var go in Object.FindObjectsByType<GameObject>(FindObjectsInactive.Include, FindObjectsSortMode.None))
-                if (go.name == "VfxPrefab(Clone)") list.Add(go);
+                if (go.name == "VfxPrefab(Clone)" && go.activeInHierarchy) list.Add(go);
             return list;
         }
 

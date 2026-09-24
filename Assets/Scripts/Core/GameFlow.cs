@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using EchoOfTheVoid.Save;
 
 namespace EchoOfTheVoid.Core
 {
@@ -10,8 +11,24 @@ namespace EchoOfTheVoid.Core
         public const string MainMenuScene = "MainMenu";
         public const string FirstGameplayScene = "Prototype_Level1";
 
+        private static bool _isPaused;
+
+        public static event Action OnGamePaused;
+        public static event Action OnGameResumed;
+        public static event Action<SaveData> OnGameLoaded;
+
         /// <summary>True while the pause menu is open. Anything that restores Time.timeScale must respect it.</summary>
-        public static bool IsPaused { get; set; }
+        public static bool IsPaused
+        {
+            get => _isPaused;
+            set
+            {
+                if (_isPaused == value) return;
+                _isPaused = value;
+                if (value) OnGamePaused?.Invoke();
+                else OnGameResumed?.Invoke();
+            }
+        }
 
         /// <summary>Tests replace this to observe scene loads without needing the scenes in the build.</summary>
         public static Action<string> SceneLoader = name => SceneManager.LoadScene(name);
@@ -21,6 +38,7 @@ namespace EchoOfTheVoid.Core
         public static void StartNewGame(int slot = 0)
         {
             GameSession.StartNewGame(slot);
+            OnGameLoaded?.Invoke(GameSession.Current);
             Load(FirstGameplayScene);
         }
 
@@ -30,6 +48,7 @@ namespace EchoOfTheVoid.Core
             if (!GameSession.TryContinue(slot)) return false;
 
             string scene = GameSession.Current.sceneName;
+            OnGameLoaded?.Invoke(GameSession.Current);
             Load(string.IsNullOrEmpty(scene) ? FirstGameplayScene : scene);
             return true;
         }

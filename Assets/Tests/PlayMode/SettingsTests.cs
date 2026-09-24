@@ -307,18 +307,18 @@ namespace EchoOfTheVoid.Tests
             yield return new WaitForSeconds(0.1f);
 
             // Leave ground
-            _world.Input.SimulateMove(1f);
+            _world.Input.Move = 1f;
             yield return new WaitForSeconds(0.05f);
-            _world.Input.SimulateJump(true);
-            _world.Input.SimulateJump(false);
+            _world.Input.PressJump();
+            _world.Input.ReleaseJump();
 
             // Should jump because coyote extends to 0.2s
             yield return new WaitForSeconds(0.05f);
             float groundedHeight = _world.Controller.transform.position.y;
 
             yield return new WaitForSeconds(0.08f);
-            _world.Input.SimulateJump(true);
-            _world.Input.SimulateJump(false);
+            _world.Input.PressJump();
+            _world.Input.ReleaseJump();
             yield return null;
 
             float afterSecondJump = _world.Controller.transform.position.y;

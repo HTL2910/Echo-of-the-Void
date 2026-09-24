@@ -11,6 +11,8 @@ namespace EchoOfTheVoid.Player
 {
     public class PlayerStats : MonoBehaviour, IDamageable
     {
+        public static PlayerStats Instance { get; private set; }
+
         [Header("Survival (GDD)")]
         [SerializeField] private int maxHealth = 100;
         [SerializeField] private int maxEnergy = 100;
@@ -39,9 +41,15 @@ namespace EchoOfTheVoid.Player
 
         private void Awake()
         {
+            Instance = this;
             _renderer = GetComponentInChildren<SpriteRenderer>();
             _currentHealth = maxHealth;
             _currentEnergy = maxEnergy;
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this) Instance = null;
         }
 
         private void Start()
@@ -155,23 +163,19 @@ namespace EchoOfTheVoid.Player
         private IEnumerator IFrameRoutine()
         {
             _isInvulnerable = true;
-            float elapsed = 0f;
             float blinkInterval = 0.08f;
-
             float duration = SettingsService.Current.extendedIFrames ? iFrameDuration * 1.5f : iFrameDuration;
-            while (elapsed < duration)
+            float endTime = Time.time + duration;
+            bool dimmed = true;
+
+            while (Time.time < endTime)
             {
                 if (_renderer != null)
-                {
-                    _renderer.color = new Color(1f, 0.4f, 0.4f, 0.4f);
-                }
-                yield return new WaitForSeconds(blinkInterval);
-                if (_renderer != null)
-                {
-                    _renderer.color = Color.white;
-                }
-                yield return new WaitForSeconds(blinkInterval);
-                elapsed += blinkInterval * 2f;
+                    _renderer.color = dimmed ? new Color(1f, 0.4f, 0.4f, 0.4f) : Color.white;
+
+                float remaining = endTime - Time.time;
+                yield return new WaitForSeconds(Mathf.Min(blinkInterval, remaining));
+                dimmed = !dimmed;
             }
 
             if (_renderer != null) _renderer.color = Color.white;

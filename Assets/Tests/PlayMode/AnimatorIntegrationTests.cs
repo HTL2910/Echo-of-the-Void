@@ -1,5 +1,7 @@
 using NUnit.Framework;
 using UnityEngine;
+using UnityEditor;
+using UnityEditor.Animations;
 using EchoOfTheVoid.Enemies;
 using EchoOfTheVoid.Player;
 
@@ -15,7 +17,7 @@ namespace EchoOfTheVoid.Tests
         [Test]
         public void PlayerPrefab_HasAnimatorOnVisualChild()
         {
-            var prefab = Resources.Load<GameObject>(PlayerPrefabPath);
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefabPath);
             Assert.That(prefab, Is.Not.Null, "Player prefab not found");
 
             var visual = prefab.transform.Find("Visual");
@@ -28,7 +30,7 @@ namespace EchoOfTheVoid.Tests
         [Test]
         public void PlayerAnimator_HasController()
         {
-            var prefab = Resources.Load<GameObject>(PlayerPrefabPath);
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefabPath);
             var visual = prefab.transform.Find("Visual");
             var animator = visual.GetComponent<Animator>();
 
@@ -39,26 +41,21 @@ namespace EchoOfTheVoid.Tests
         [Test]
         public void PlayerAnimator_HasAllRequiredStates()
         {
-            var prefab = Resources.Load<GameObject>(PlayerPrefabPath);
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefabPath);
             var visual = prefab.transform.Find("Visual");
             var animator = visual.GetComponent<Animator>();
 
             var controller = animator.runtimeAnimatorController as AnimatorController;
             Assert.That(controller, Is.Not.Null, "Failed to load AnimatorController");
 
-            // Check for key states in all layers
-            int layerCount = animator.layerCount;
-            Assert.That(layerCount, Is.GreaterThan(0), "No layers in animator");
-
-            // Note: Full state validation requires AnimatorStateMachine inspection
-            // For now, verify controller is valid
+            // Inspect the controller asset directly; Animator.layerCount is only initialized at runtime.
             Assert.That(controller.layers.Length, Is.GreaterThan(0), "No layers in controller");
         }
 
         [Test]
         public void CrawlerEnemy_HasAnimatorOnVisualChild()
         {
-            var prefab = Resources.Load<GameObject>(CrawlerPrefabPath);
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(CrawlerPrefabPath);
             Assert.That(prefab, Is.Not.Null, "Crawler prefab not found");
 
             var visual = prefab.transform.Find("Visual");
@@ -71,7 +68,7 @@ namespace EchoOfTheVoid.Tests
         [Test]
         public void CrawlerAnimator_HasController()
         {
-            var prefab = Resources.Load<GameObject>(CrawlerPrefabPath);
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(CrawlerPrefabPath);
             var visual = prefab.transform.Find("Visual");
             var animator = visual.GetComponent<Animator>();
 
@@ -82,7 +79,7 @@ namespace EchoOfTheVoid.Tests
         [Test]
         public void WeaverEnemy_HasAnimatorOnVisualChild()
         {
-            var prefab = Resources.Load<GameObject>(WeaverPrefabPath);
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(WeaverPrefabPath);
             Assert.That(prefab, Is.Not.Null, "Weaver prefab not found");
 
             var visual = prefab.transform.Find("Visual");
@@ -95,7 +92,7 @@ namespace EchoOfTheVoid.Tests
         [Test]
         public void WeaverAnimator_HasController()
         {
-            var prefab = Resources.Load<GameObject>(WeaverPrefabPath);
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(WeaverPrefabPath);
             var visual = prefab.transform.Find("Visual");
             var animator = visual.GetComponent<Animator>();
 
@@ -106,7 +103,7 @@ namespace EchoOfTheVoid.Tests
         [Test]
         public void PlayerInstantiated_AnimatorRunning()
         {
-            var prefab = Resources.Load<GameObject>(PlayerPrefabPath);
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefabPath);
             var instance = Object.Instantiate(prefab);
 
             var visual = instance.transform.Find("Visual");
@@ -123,7 +120,7 @@ namespace EchoOfTheVoid.Tests
         [Test]
         public void CrawlerInstantiated_AnimatorRunning()
         {
-            var prefab = Resources.Load<GameObject>(CrawlerPrefabPath);
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(CrawlerPrefabPath);
             var instance = Object.Instantiate(prefab);
 
             var visual = instance.transform.Find("Visual");
@@ -139,7 +136,7 @@ namespace EchoOfTheVoid.Tests
         [Test]
         public void PlayerAnimator_SpriteRendererPresent()
         {
-            var prefab = Resources.Load<GameObject>(PlayerPrefabPath);
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefabPath);
             var visual = prefab.transform.Find("Visual");
             var spriteRenderer = visual.GetComponent<SpriteRenderer>();
 
@@ -150,7 +147,7 @@ namespace EchoOfTheVoid.Tests
         [Test]
         public void CrawlerAnimator_SpriteRendererPresent()
         {
-            var prefab = Resources.Load<GameObject>(CrawlerPrefabPath);
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(CrawlerPrefabPath);
             var visual = prefab.transform.Find("Visual");
             var spriteRenderer = visual.GetComponent<SpriteRenderer>();
 

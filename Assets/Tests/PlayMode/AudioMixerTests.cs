@@ -9,13 +9,16 @@ namespace EchoOfTheVoid.Tests
     public class AudioMixerTests
     {
         private GameObject _mixerControllerObj;
+        private GameObject _playerStatsObj;
         private AudioMixerController _controller;
 
         [SetUp]
         public void Setup()
         {
             GameSession.Reset();
-            PlayerStats.Reset();
+
+            _playerStatsObj = new GameObject("PlayerStats");
+            _playerStatsObj.AddComponent<PlayerStats>();
 
             _mixerControllerObj = new GameObject("AudioMixerController");
             _controller = _mixerControllerObj.AddComponent<AudioMixerController>();
@@ -25,8 +28,8 @@ namespace EchoOfTheVoid.Tests
         public void Teardown()
         {
             Object.Destroy(_mixerControllerObj);
+            Object.Destroy(_playerStatsObj);
             GameSession.Reset();
-            PlayerStats.Reset();
         }
 
         [Test]
@@ -60,8 +63,7 @@ namespace EchoOfTheVoid.Tests
         public void LowHealth_TriggersBelowThreshold()
         {
             var stats = PlayerStats.Instance;
-            stats.CurrentHealth = 10;
-            stats.MaxHealth = 100;
+            stats.RestoreProgress(10, 100);
 
             // 10/100 = 0.1 <= 0.25, should trigger LowHP
             Assert.That((float)stats.CurrentHealth / stats.MaxHealth, Is.LessThanOrEqualTo(0.25f));
@@ -71,8 +73,7 @@ namespace EchoOfTheVoid.Tests
         public void LowHealth_DoesNotTriggerAboveThreshold()
         {
             var stats = PlayerStats.Instance;
-            stats.CurrentHealth = 30;
-            stats.MaxHealth = 100;
+            stats.RestoreProgress(30, 100);
 
             // 30/100 = 0.3 > 0.25, should not trigger LowHP
             Assert.That((float)stats.CurrentHealth / stats.MaxHealth, Is.GreaterThan(0.25f));
@@ -82,7 +83,7 @@ namespace EchoOfTheVoid.Tests
         public void RealmSwitch_UpdatesCurrentRealm()
         {
             var initialRealm = RealmType.Prime;
-            RealityEventBus.SwitchRealm(RealmType.Echo);
+            RealityEventBus.TriggerRealmSwitch(RealmType.Echo);
 
             // Note: Actual realm state is in RealityManager. This test validates event flow.
             // A more comprehensive test would mock the mixer's snapshot state.
