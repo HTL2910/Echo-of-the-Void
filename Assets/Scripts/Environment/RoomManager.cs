@@ -3,6 +3,7 @@ using UnityEngine;
 using EchoOfTheVoid.Core;
 using EchoOfTheVoid.Feedback;
 using EchoOfTheVoid.Player;
+using EchoOfTheVoid.UI.Map;
 
 namespace EchoOfTheVoid.Environment
 {
@@ -77,6 +78,8 @@ namespace EchoOfTheVoid.Environment
             }
 
             if (!GameSession.Current.visitedRooms.Contains(room.RoomId)) GameSession.Current.visitedRooms.Add(room.RoomId);
+
+            MapManager.DiscoverRoom(room.RoomId);
 
             if (!firstRoom)
             {

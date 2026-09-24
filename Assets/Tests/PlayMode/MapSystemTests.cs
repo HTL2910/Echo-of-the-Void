@@ -121,5 +121,50 @@ namespace EchoOfTheVoid.Tests
             Object.Destroy(player);
             Object.Destroy(roomObj);
         }
+
+        [Test]
+        public void FastTravel_LockedUntilZ2Boss()
+        {
+            Assert.That(FastTravelManager.IsUnlocked, Is.False);
+        }
+
+        [Test]
+        public void FastTravel_UnlocksAfterZ2Boss()
+        {
+            BossEvents.RaiseBossDefeated("Z2_Boss_Keeper");
+            Assert.That(FastTravelManager.IsUnlocked, Is.True);
+        }
+
+        [Test]
+        public void FastTravel_UpdatesCheckpointOnTravel()
+        {
+            FastTravelManager.SetUnlocked(true);
+            var stationObj = new GameObject("Station");
+            stationObj.transform.position = new Vector3(10f, 5f, 0f);
+            var station = stationObj.AddComponent<ChronoStation>();
+            station.Configure("Z1_Station_01");
+
+            var session = GameSession.Current;
+            var initialPos = session.SaveData.checkpointX;
+
+            FastTravelManager.TravelToStation("Z1_Station_01");
+
+            Assert.That(session.SaveData.checkpointId, Is.EqualTo("Z1_Station_01"));
+            Assert.That(session.SaveData.checkpointX, Is.Not.EqualTo(initialPos));
+
+            Object.Destroy(stationObj);
+        }
+
+        [Test]
+        public void FastTravel_FailsWhenLocked()
+        {
+            FastTravelManager.SetUnlocked(false);
+            var session = GameSession.Current;
+            var initialCheckpoint = session.SaveData.checkpointId;
+
+            FastTravelManager.TravelToStation("Z1_Station_01");
+
+            Assert.That(session.SaveData.checkpointId, Is.EqualTo(initialCheckpoint));
+        }
     }
 }
