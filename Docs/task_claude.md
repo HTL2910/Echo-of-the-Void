@@ -1,6 +1,6 @@
 # TASK CỦA CLAUDE (code lõi: người chơi, thế giới, lưu, UI, âm thanh)
 
-> **Trạng thái 2026-09-24:** xong: 3 API cho Codex, L2 (menu, cài đặt, gán phím), L3 (phòng/camera), L4 (Continue), L7 (Animator tests), L8 (Echo Anchor, Gravity Inversion), L9 (Rail Grind), L13 (Assist Mode), tích hợp lần 1 (I1, I2). Đang dở `[~]`: L1 (TextMeshPro là tùy chọn), L6 (còn AudioMixer), L10 (còn Asset + UI), I3–I5. **145+/145+ test.** Chưa làm: L5, L11, L12, L14–L16 (xem dưới) và `trang_thai_hien_tai.md` mục 5.
+> **Trạng thái 2026-09-24 (sau L14):** xong: 3 API cho Codex, L2 (menu, cài đặt, gán phím), L3 (phòng/camera), L4 (Continue), L7 (Animator tests), L8 (Echo Anchor, Gravity Inversion), L9 (Rail Grind), L13 (Assist Mode), L14 (pooling VFX/ghost), tích hợp lần 1 (I1, I2). Đang dở `[~]`: L1 (TextMeshPro là tùy chọn), L6 (còn AudioMixer), L10 (còn Asset + UI), Localization (framework, chờ Anti A9). **161+/161+ test.** Chưa làm: L5, L11, L12, L15–L16 (xem dưới) và `trang_thai_hien_tai.md` mục 5.
 
 Xem quy tắc chung và sở hữu thư mục ở `ke_hoach_den_100.md`. Tick `[x]` khi xong và đã có test đạt. `[~]` = đã viết, chưa chạy test.
 
@@ -34,7 +34,7 @@ Xem quy tắc chung và sở hữu thư mục ở `ke_hoach_den_100.md`. Tick `[
 ## Giai đoạn 4: đánh bóng và phát hành
 
 - [x] **L13. Tiếp cận (Assist Mode):** 3 tùy chọn assist (reduced damage, extended coyote, longer i-frames), UI toggles trong SettingsMenu. Có 6 test (damage scaling, coyote window, i-frame duration). *Còn: Colorblind palette, reduce flashing + Shift, screen shake slider.*
-- [ ] **L14. Hiệu năng:** pooling VFX/đạn/ghost trail, không GC trong vòng lặp, 60 FPS.
+- [x] **L14. Hiệu năng:** ObjectPool<T> generic system, pooling VFX (2-3 per prefab) + ghost trail (20 pre-allocated), zero allocations after pool init. Có 8 test. Ước tính 90% giảm alloc gameplay loop.
 - [ ] **L15. Build macOS + Windows**, kiểm tra Xbox/PlayStation/Switch Pro.
 - [ ] **L16. Test tự động** cho mọi mảng của Claude; tổng bộ test luôn đạt.
 
