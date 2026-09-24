@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
+using EchoOfTheVoid.UI.Map;
 
 namespace EchoOfTheVoid.Environment
 {
@@ -52,6 +54,12 @@ namespace EchoOfTheVoid.Environment
 
         private void OnEnable() => Registry.Add(this);
         private void OnDisable() => Registry.Remove(this);
+
+        private void OnTriggerEnter2D(Collider2D collision)
+        {
+            if (collision.CompareTag("Player"))
+                MapManager.DiscoverRoom(roomId);
+        }
 
         private void OnDrawGizmos()
         {
