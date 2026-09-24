@@ -298,5 +298,64 @@ namespace EchoOfTheVoid.Tests
             var prime = _extra.transform.Find("Stem_Prime").GetComponent<AudioSource>();
             Assert.AreEqual(0.6f * 0.5f, prime.volume, 0.001f, "Stem volume = base 0.6 x music slider 0.5");
         }
+
+        [UnityTest]
+        public IEnumerator AssistExtendedCoyote_AllowsJumpAfterLeaving()
+        {
+            _world = TestWorld.Create(new Vector2(0f, 1.5f));
+            SettingsService.Current.extendedCoyoteTime = true;
+            yield return new WaitForSeconds(0.1f);
+
+            // Leave ground
+            _world.Input.SimulateMove(1f);
+            yield return new WaitForSeconds(0.05f);
+            _world.Input.SimulateJump(true);
+            _world.Input.SimulateJump(false);
+
+            // Should jump because coyote extends to 0.2s
+            yield return new WaitForSeconds(0.05f);
+            float groundedHeight = _world.Controller.transform.position.y;
+
+            yield return new WaitForSeconds(0.08f);
+            _world.Input.SimulateJump(true);
+            _world.Input.SimulateJump(false);
+            yield return null;
+
+            float afterSecondJump = _world.Controller.transform.position.y;
+            Assert.Greater(afterSecondJump, groundedHeight, "Second jump with extended coyote succeeded");
+        }
+
+        [UnityTest]
+        public IEnumerator AssistExtendedIFrames_IncreasesInvulnerabilityDuration()
+        {
+            _world = TestWorld.Create(new Vector2(0f, 1.5f));
+            SettingsService.Current.extendedIFrames = true;
+            yield return new WaitForSeconds(0.4f);
+
+            // Take damage to trigger i-frames
+            _world.Stats.TakeDamage(new DamageInfo(20, Vector2.zero, Vector2.zero, RealmType.Prime));
+            Assert.IsTrue(_world.Stats.IsInvulnerable);
+
+            // Normal duration is 0.8s, extended is 1.2s (0.8 * 1.5)
+            yield return new WaitForSeconds(0.9f);
+            Assert.IsTrue(_world.Stats.IsInvulnerable, "Extended i-frames last longer than 0.8s");
+
+            yield return new WaitForSeconds(0.4f);
+            Assert.IsFalse(_world.Stats.IsInvulnerable, "Extended i-frames expire after 1.2s");
+        }
+
+        [UnityTest]
+        public IEnumerator AssistDefaultSettings_NoExtensions()
+        {
+            _world = TestWorld.Create(new Vector2(0f, 1.5f));
+            SettingsService.Current.extendedCoyoteTime = false;
+            SettingsService.Current.extendedIFrames = false;
+            yield return new WaitForSeconds(0.1f);
+
+            // Take damage, normal i-frames
+            _world.Stats.TakeDamage(new DamageInfo(20, Vector2.zero, Vector2.zero, RealmType.Prime));
+            yield return new WaitForSeconds(0.85f);
+            Assert.IsFalse(_world.Stats.IsInvulnerable, "Normal i-frames expire after 0.8s");
+        }
     }
 }
