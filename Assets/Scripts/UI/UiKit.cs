@@ -12,12 +12,25 @@ namespace EchoOfTheVoid.UI
     /// </summary>
     public static class UiKit
     {
+        // Palette: Dark aether-punk theme with cyan/purple accents
         public static readonly Color Panel = new Color(0.03f, 0.05f, 0.09f, 0.94f);
+        public static readonly Color PanelDark = new Color(0.01f, 0.02f, 0.04f, 0.98f);
         public static readonly Color Accent = new Color(0f, 0.85f, 1f, 1f);
+        public static readonly Color AccentBright = new Color(0.2f, 1f, 1f, 1f);
         public static readonly Color Echo = new Color(0.85f, 0.25f, 1f, 1f);
+        public static readonly Color EchoBright = new Color(1f, 0.4f, 1f, 1f);
         public static readonly Color TextColor = new Color(0.88f, 0.93f, 0.97f, 1f);
+        public static readonly Color TextSecondary = new Color(0.7f, 0.8f, 0.88f, 1f);
         public static readonly Color Muted = new Color(0.55f, 0.62f, 0.7f, 1f);
         public static readonly Color ButtonNormal = new Color(0.1f, 0.15f, 0.22f, 1f);
+        public static readonly Color ButtonHover = new Color(0.55f, 0.95f, 1f, 1f);
+        public static readonly Color ButtonActive = new Color(0.35f, 0.7f, 0.85f, 1f);
+
+        // Typography: Heading / Body / Small
+        public const int SizeHeading = 44;
+        public const int SizeTitle = 32;
+        public const int SizeBody = 26;
+        public const int SizeSmall = 20;
 
         private static Font _fallback;
 
@@ -65,8 +78,8 @@ namespace EchoOfTheVoid.UI
             return rect;
         }
 
-        /// <summary>A vertical stack that lays its children out top to bottom.</summary>
-        public static VerticalLayoutGroup MakeVertical(RectTransform rect, float spacing = 14f, int padding = 30)
+        /// <summary>Vertical stack with improved spacing (heading→body sections), top-to-bottom layout.</summary>
+        public static VerticalLayoutGroup MakeVertical(RectTransform rect, float spacing = 20f, int padding = 40)
         {
             var layout = rect.gameObject.AddComponent<VerticalLayoutGroup>();
             layout.spacing = spacing;
@@ -91,11 +104,28 @@ namespace EchoOfTheVoid.UI
             t.color = color;
             t.alignment = anchor;
             t.raycastTarget = false;
-            go.GetComponent<LayoutElement>().preferredHeight = height > 0f ? height : size * 1.6f;
+            t.horizontalOverflow = HorizontalWrapMode.Wrap;
+            t.verticalOverflow = VerticalWrapMode.Truncate;
+            go.GetComponent<LayoutElement>().preferredHeight = height > 0f ? height : size * 1.8f;
             return t;
         }
 
-        public static Button CreateButton(Transform parent, string text, Font font, Action onClick, float height = 64f)
+        public static Text CreateHeading(Transform parent, string text, Font font)
+        {
+            return CreateLabel(parent, text, SizeHeading, font, Accent, TextAnchor.MiddleCenter, SizeHeading * 1.8f);
+        }
+
+        public static Text CreateTitle(Transform parent, string text, Font font)
+        {
+            return CreateLabel(parent, text, SizeTitle, font, AccentBright, TextAnchor.MiddleCenter, SizeTitle * 1.8f);
+        }
+
+        public static Text CreateBody(Transform parent, string text, Font font, Color? color = null)
+        {
+            return CreateLabel(parent, text, SizeBody, font, color ?? TextColor, TextAnchor.MiddleCenter, SizeBody * 1.8f);
+        }
+
+        public static Button CreateButton(Transform parent, string text, Font font, Action onClick, float height = 68f)
         {
             var go = new GameObject("Button_" + text, typeof(RectTransform), typeof(Image), typeof(Button), typeof(LayoutElement));
             go.transform.SetParent(parent, false);
@@ -107,20 +137,25 @@ namespace EchoOfTheVoid.UI
             var button = go.GetComponent<Button>();
             var colors = button.colors;
             colors.normalColor = Color.white;
-            colors.highlightedColor = new Color(0.55f, 0.95f, 1f, 1f);
-            colors.selectedColor = new Color(0.55f, 0.95f, 1f, 1f);
-            colors.pressedColor = new Color(0.35f, 0.7f, 0.85f, 1f);
+            colors.highlightedColor = ButtonHover;
+            colors.selectedColor = ButtonHover;
+            colors.pressedColor = ButtonActive;
             colors.disabledColor = new Color(0.4f, 0.4f, 0.4f, 0.6f);
             button.colors = colors;
             button.targetGraphic = image;
             if (onClick != null) button.onClick.AddListener(() => onClick());
 
-            var label = CreateLabel(go.transform, text, 28, font, TextColor);
+            var label = CreateLabel(go.transform, text, SizeBody, font, TextColor);
             var rect = label.rectTransform;
             rect.anchorMin = Vector2.zero;
             rect.anchorMax = Vector2.one;
             rect.sizeDelta = Vector2.zero;
             DestroyLayoutElement(label.gameObject);
+
+            // Add transition animation via CanvasGroup
+            var canvasGroup = go.AddComponent<CanvasGroup>();
+            canvasGroup.alpha = 1f;
+
             return button;
         }
 
@@ -132,8 +167,8 @@ namespace EchoOfTheVoid.UI
 
         public static Slider CreateSlider(Transform parent, string label, float value, Font font, Action<float> onChange)
         {
-            var row = CreateRow(parent, 56f);
-            var text = CreateLabel(row, label, 26, font, TextColor, TextAnchor.MiddleLeft);
+            var row = CreateRow(parent, 64f);
+            var text = CreateLabel(row, label, SizeBody, font, TextSecondary, TextAnchor.MiddleLeft);
             text.GetComponent<LayoutElement>().preferredWidth = 420f;
 
             var slider = DefaultControls.CreateSlider(new DefaultControls.Resources()).GetComponent<Slider>();
@@ -144,25 +179,39 @@ namespace EchoOfTheVoid.UI
             slider.onValueChanged.AddListener(v => onChange?.Invoke(v));
             var element = slider.gameObject.AddComponent<LayoutElement>();
             element.preferredWidth = 520f;
-            element.preferredHeight = 36f;
-            foreach (var image in slider.GetComponentsInChildren<Image>()) image.color = Accent;
+            element.preferredHeight = 40f;
+
+            // Color slider thumb and fill
+            var fillImage = slider.transform.Find("Fill Area/Fill");
+            if (fillImage != null) fillImage.GetComponent<Image>().color = Accent;
+            var thumb = slider.transform.Find("Handle Slide Area/Handle");
+            if (thumb != null) thumb.GetComponent<Image>().color = AccentBright;
+
             return slider;
         }
 
         public static Toggle CreateToggle(Transform parent, string label, bool value, Font font, Action<bool> onChange)
         {
-            var row = CreateRow(parent, 52f);
-            var text = CreateLabel(row, label, 26, font, TextColor, TextAnchor.MiddleLeft);
+            var row = CreateRow(parent, 60f);
+            var text = CreateLabel(row, label, SizeBody, font, TextSecondary, TextAnchor.MiddleLeft);
             text.GetComponent<LayoutElement>().preferredWidth = 700f;
 
             var toggle = DefaultControls.CreateToggle(new DefaultControls.Resources()).GetComponent<Toggle>();
             toggle.transform.SetParent(row, false);
-            foreach (var t in toggle.GetComponentsInChildren<Text>()) UnityEngine.Object.Destroy(t.gameObject); // its own label
+            foreach (var t in toggle.GetComponentsInChildren<Text>()) UnityEngine.Object.Destroy(t.gameObject);
             toggle.SetIsOnWithoutNotify(value);
             toggle.onValueChanged.AddListener(v => onChange?.Invoke(v));
+
             var element = toggle.gameObject.AddComponent<LayoutElement>();
-            element.preferredWidth = 40f;
-            element.preferredHeight = 40f;
+            element.preferredWidth = 48f;
+            element.preferredHeight = 48f;
+
+            // Color checkbox
+            var bg = toggle.transform.Find("Background");
+            if (bg != null) bg.GetComponent<Image>().color = ButtonNormal;
+            var checkmark = toggle.transform.Find("Background/Checkmark");
+            if (checkmark != null) checkmark.GetComponent<Image>().color = Accent;
+
             return toggle;
         }
 
@@ -171,7 +220,8 @@ namespace EchoOfTheVoid.UI
             var go = new GameObject("Row", typeof(RectTransform), typeof(HorizontalLayoutGroup), typeof(LayoutElement));
             go.transform.SetParent(parent, false);
             var layout = go.GetComponent<HorizontalLayoutGroup>();
-            layout.spacing = 16f;
+            layout.spacing = 24f;
+            layout.padding = new RectOffset(0, 0, 8, 8);
             layout.childAlignment = TextAnchor.MiddleLeft;
             layout.childControlWidth = true;
             layout.childControlHeight = true;
