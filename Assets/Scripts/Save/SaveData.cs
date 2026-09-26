@@ -28,5 +28,8 @@ namespace EchoOfTheVoid.Save
         public List<string> bossDefeated = new List<string>();
         public List<string> visitedRooms = new List<string>();   // for the map (spec 9.3)
         public List<string> unlockedDoorIds = new List<string>(); // for map locks (spec 9.3)
+
+        // Ending state
+        public string endingChosen = "";  // "reset", "convergence", "sovereign" - filled when player picks an ending
     }
 }

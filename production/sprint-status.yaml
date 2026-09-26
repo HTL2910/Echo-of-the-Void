@@ -29,16 +29,16 @@ must_have:
     name: "L5: Reality Polish (tint/LUT/vignette)"
     file: "Docs/task_claude.md"
     priority: must-have
-    status: backlog
+    status: in-progress
     owner: claude
     estimate_days: 3
-    blocker: "Anti B4 (tileset layer setup)"
+    blocker: ""
     completed: ""
     acceptance: |
-      - Realm shift tint transition 0.18s smooth
-      - Vignette per-realm renders correctly
-      - Echo particles inverted gravity
-      - No performance drop
+      - Realm shift tint transition 0.18s smooth (✓ implemented)
+      - Vignette per-realm renders correctly (✓ implemented)
+      - Echo particles inverted gravity (→ pending particle system review)
+      - No performance drop (→ pending full integration test)
 
   - id: "3B-L11"
     name: "L11: Dialogue & Endings (Iris, Monoliths, 3 ends, credits)"

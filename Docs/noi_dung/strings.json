@@ -46,19 +46,84 @@
       "vi": "[Memory Monolith #1 - chờ Anti A9]"
     },
     {
-      "key": "ending.true",
-      "en": "[True ending - pending Anti A9]",
-      "vi": "[Kết thúc thật - chờ Anti A9]"
+      "key": "monolith.entry_02",
+      "en": "[Memory Monolith #2 - pending Anti A9]",
+      "vi": "[Memory Monolith #2 - chờ Anti A9]"
     },
     {
-      "key": "ending.echo",
-      "en": "[Echo ending - pending Anti A9]",
-      "vi": "[Kết thúc Echo - chờ Anti A9]"
+      "key": "monolith.entry_03",
+      "en": "[Memory Monolith #3 - pending Anti A9]",
+      "vi": "[Memory Monolith #3 - chờ Anti A9]"
     },
     {
-      "key": "ending.void",
-      "en": "[Void ending - pending Anti A9]",
-      "vi": "[Kết thúc Void - chờ Anti A9]"
+      "key": "monolith.entry_04",
+      "en": "[Memory Monolith #4 - pending Anti A9]",
+      "vi": "[Memory Monolith #4 - chờ Anti A9]"
+    },
+    {
+      "key": "monolith.entry_05",
+      "en": "[Memory Monolith #5 - pending Anti A9]",
+      "vi": "[Memory Monolith #5 - chờ Anti A9]"
+    },
+    {
+      "key": "monolith.entry_06",
+      "en": "[Memory Monolith #6 - pending Anti A9]",
+      "vi": "[Memory Monolith #6 - chờ Anti A9]"
+    },
+    {
+      "key": "monolith.entry_07",
+      "en": "[Memory Monolith #7 - pending Anti A9]",
+      "vi": "[Memory Monolith #7 - chờ Anti A9]"
+    },
+    {
+      "key": "monolith.entry_08",
+      "en": "[Memory Monolith #8 - pending Anti A9]",
+      "vi": "[Memory Monolith #8 - chờ Anti A9]"
+    },
+    {
+      "key": "monolith.entry_09",
+      "en": "[Memory Monolith #9 - pending Anti A9]",
+      "vi": "[Memory Monolith #9 - chờ Anti A9]"
+    },
+    {
+      "key": "monolith.entry_10",
+      "en": "[Memory Monolith #10 - pending Anti A9]",
+      "vi": "[Memory Monolith #10 - chờ Anti A9]"
+    },
+    {
+      "key": "monolith.entry_11",
+      "en": "[Memory Monolith #11 - pending Anti A9]",
+      "vi": "[Memory Monolith #11 - chờ Anti A9]"
+    },
+    {
+      "key": "monolith.entry_12",
+      "en": "[Memory Monolith #12 - pending Anti A9]",
+      "vi": "[Memory Monolith #12 - chờ Anti A9]"
+    },
+    {
+      "key": "dialogue.iris_intro",
+      "en": "[Iris dialogue intro - pending Anti A9]",
+      "vi": "[Hội thoại Iris intro - chờ Anti A9]"
+    },
+    {
+      "key": "ending.reset",
+      "en": "[A Reset ending - pending Anti A9]",
+      "vi": "[Kết thúc Đặt Lại - chờ Anti A9]"
+    },
+    {
+      "key": "ending.convergence",
+      "en": "[B Convergence ending - pending Anti A9]",
+      "vi": "[Kết thúc Hội Tụ - chờ Anti A9]"
+    },
+    {
+      "key": "ending.sovereign",
+      "en": "[C Void Sovereign ending - pending Anti A9]",
+      "vi": "[Kết thúc Chủ Quyền Void - chờ Anti A9]"
+    },
+    {
+      "key": "ui.choose_ending",
+      "en": "Choose Your Path",
+      "vi": "Chọn Hành Trình Của Bạn"
     }
   ]
 }
