@@ -3,6 +3,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using EchoOfTheVoid.Core;
 using EchoOfTheVoid.Environment;
+using EchoOfTheVoid.Environment.Mechanics;
 using EchoOfTheVoid.Enemies;
 using System.IO;
 
