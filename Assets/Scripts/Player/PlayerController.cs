@@ -31,6 +31,7 @@ namespace EchoOfTheVoid.Player
         [SerializeField] private float wallJumpHorizontalSpeed = 11f;
         [SerializeField] private float wallJumpVerticalSpeed = 16f;
         [SerializeField] private float wallJumpInputLock = 0.12f; // spec 3.2: keeps the kick from being cancelled at once
+        [SerializeField] private float wallCoyoteDuration = 0.15f;
 
         [Header("Dash Metrics (GDD & Master Spec)")]
         [SerializeField] private float dashSpeed = 20f; // Spec: 4 tiles / 0.2s = 20 units/s
@@ -65,7 +66,9 @@ namespace EchoOfTheVoid.Player
         private bool _isGrounded;
         private bool _isTouchingWall;
         private float _wallDirection;
+        private float _lastWallDirection;
         private float _coyoteTimer;
+        private float _wallCoyoteTimer;
         private float _jumpBufferTimer;
 
         // Dash & Cooldown timers
@@ -93,6 +96,10 @@ namespace EchoOfTheVoid.Player
         public bool IsGrounded => _isGrounded;
         public bool IsTouchingWall => _isTouchingWall;
         public float WallDirection => _wallDirection;
+        public float LastWallDirection => _lastWallDirection;
+        public float CoyoteTimer => _coyoteTimer;
+        public float WallCoyoteTimer => _wallCoyoteTimer;
+        public bool CanWallJump => (_isTouchingWall || _wallCoyoteTimer > 0f) && HasAbility(AbilityFlags.WallJump);
         public float DashDuration => dashDuration;
         public Vector2 LinearVelocity => _rb.linearVelocity;
         public bool IsAttacking => (_combat != null && _combat.IsAttacking);
@@ -214,6 +221,7 @@ namespace EchoOfTheVoid.Player
         private void UpdateTimers()
         {
             if (_coyoteTimer > 0f) _coyoteTimer -= Time.deltaTime;
+            if (_wallCoyoteTimer > 0f) _wallCoyoteTimer -= Time.deltaTime;
             if (_jumpBufferTimer > 0f) _jumpBufferTimer -= Time.deltaTime;
             if (_freezeVerticalTimer > 0f) _freezeVerticalTimer -= Time.deltaTime;
             if (_wallJumpLockTimer > 0f) _wallJumpLockTimer -= Time.deltaTime;
@@ -243,6 +251,7 @@ namespace EchoOfTheVoid.Player
                 _coyoteTimer = SettingsService.Current.extendedCoyoteTime ? coyoteDuration + 0.1f : coyoteDuration;
                 // Spec: Reset dash immediately upon landing
                 ResetDashCooldown();
+                _wallCoyoteTimer = 0f;
             }
 
             // Wall Check
@@ -262,6 +271,8 @@ namespace EchoOfTheVoid.Player
                 {
                     _isTouchingWall = true;
                     _wallDirection = 1f;
+                    _lastWallDirection = 1f;
+                    _wallCoyoteTimer = SettingsService.Current.extendedCoyoteTime ? wallCoyoteDuration + 0.1f : wallCoyoteDuration;
                 }
                 else
                 {
@@ -270,6 +281,8 @@ namespace EchoOfTheVoid.Player
                     {
                         _isTouchingWall = true;
                         _wallDirection = -1f;
+                        _lastWallDirection = -1f;
+                        _wallCoyoteTimer = SettingsService.Current.extendedCoyoteTime ? wallCoyoteDuration + 0.1f : wallCoyoteDuration;
                     }
                 }
             }
@@ -285,13 +298,31 @@ namespace EchoOfTheVoid.Player
 
         public bool CheckAndConsumeJump()
         {
-            bool canWallJump = _isTouchingWall && HasAbility(AbilityFlags.WallJump);
-            if (_jumpBufferTimer > 0f && (_coyoteTimer > 0f || canWallJump))
+            return CheckAndConsumeJump(out _);
+        }
+
+        public bool CheckAndConsumeJump(out bool isWallJump)
+        {
+            isWallJump = false;
+            if (_jumpBufferTimer <= 0f) return false;
+
+            // 1. Ground Jump (including ground coyote time)
+            if (_coyoteTimer > 0f)
             {
                 _jumpBufferTimer = 0f;
                 _coyoteTimer = 0f;
                 return true;
             }
+
+            // 2. Wall Jump (including wall coyote time)
+            if (CanWallJump)
+            {
+                isWallJump = true;
+                _jumpBufferTimer = 0f;
+                _wallCoyoteTimer = 0f;
+                return true;
+            }
+
             return false;
         }
 
@@ -359,10 +390,14 @@ namespace EchoOfTheVoid.Player
 
         public void ExecuteWallJump()
         {
-            float launchX = -_wallDirection * wallJumpHorizontalSpeed;
+            float wallDir = _wallDirection != 0f ? _wallDirection : _lastWallDirection;
+            if (wallDir == 0f) wallDir = -_facingDirection;
+
+            float launchX = -wallDir * wallJumpHorizontalSpeed;
             _rb.linearVelocity = new Vector2(launchX, wallJumpVerticalSpeed * _gravitySign);
-            _facingDirection = -_wallDirection;
+            _facingDirection = -wallDir;
             _wallJumpLockTimer = wallJumpInputLock;
+            _wallCoyoteTimer = 0f;
             if (_renderer != null) _renderer.flipX = (_facingDirection < 0f);
             if (_squash != null) _squash.OnJump();
             if (AudioManager.Instance != null) AudioManager.Instance.PlayJump();

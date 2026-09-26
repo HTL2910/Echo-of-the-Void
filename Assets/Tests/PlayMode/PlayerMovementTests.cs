@@ -232,5 +232,41 @@ namespace EchoOfTheVoid.Tests
             Assert.That(_player.transform.position.x, Is.EqualTo(checkpoint.x).Within(0.5f), "Respawn at checkpoint");
             Assert.IsTrue(_controller.enabled, "Controller must be re-enabled after respawn");
         }
+
+        [UnityTest]
+        public IEnumerator Kael_WallCoyoteTime_IsActive_WhenLeavingWall()
+        {
+            CreateBox("Wall", new Vector2(1.0f, 5f), new Vector2(1f, 20f));
+            _player.transform.position = new Vector2(0f, 4f);
+            _rb.linearVelocity = Vector2.zero;
+
+            for (int i = 0; i < 10; i++) yield return new WaitForFixedUpdate();
+
+            Assert.IsTrue(_controller.IsTouchingWall, "Should touch wall");
+            Assert.IsTrue(_controller.CanWallJump, "Can wall jump while touching wall");
+
+            // Move away from wall
+            _player.transform.position = new Vector2(-1f, 4f);
+            yield return new WaitForFixedUpdate();
+
+            Assert.IsFalse(_controller.IsTouchingWall, "Left the wall");
+            Assert.Greater(_controller.WallCoyoteTimer, 0f, "Wall coyote timer active");
+            Assert.IsTrue(_controller.CanWallJump, "Can still wall jump during coyote window");
+        }
+
+        [UnityTest]
+        public IEnumerator Kael_RisingJump_DoesNotStickToWall()
+        {
+            CreateBox("Wall", new Vector2(1.0f, 5f), new Vector2(1f, 20f));
+            _player.transform.position = new Vector2(0f, 1.5f);
+            yield return Settle();
+
+            _input.PressJump();
+            yield return new WaitForFixedUpdate();
+            yield return new WaitForFixedUpdate();
+
+            Assert.AreEqual("PlayerJumpState", _controller.CurrentStateName, "Must remain in JumpState while rising, not WallSlideState");
+            Assert.Greater(_controller.VerticalSpeedUp, 1f, "Must maintain upward momentum while jumping");
+        }
     }
 }

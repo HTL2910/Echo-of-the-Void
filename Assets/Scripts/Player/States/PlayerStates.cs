@@ -97,9 +97,19 @@ namespace EchoOfTheVoid.Player.States
 
     public class PlayerJumpState : IPlayerState
     {
+        private readonly bool _fromWallJump;
+
+        public PlayerJumpState(bool fromWallJump = false)
+        {
+            _fromWallJump = fromWallJump;
+        }
+
         public void Enter(PlayerController player)
         {
-            player.ExecuteJump();
+            if (!_fromWallJump)
+            {
+                player.ExecuteJump();
+            }
         }
 
         public void Update(PlayerController player)
@@ -116,10 +126,26 @@ namespace EchoOfTheVoid.Player.States
                 return;
             }
 
-            if (player.IsTouchingWall && !player.IsGrounded)
+            // Direct wall jump if pressing jump while touching a wall
+            if (player.CheckAndConsumeJump(out bool isWallJump))
             {
-                player.ChangeState(new PlayerWallSlideState());
-                return;
+                if (isWallJump)
+                {
+                    player.ExecuteWallJump();
+                    player.ChangeState(new PlayerJumpState(fromWallJump: true));
+                    return;
+                }
+            }
+
+            // Only transition to wall slide if falling/descending, NOT while rising from a jump!
+            if (player.IsTouchingWall && !player.IsGrounded && player.VerticalSpeedUp <= 0.1f)
+            {
+                bool holdingAway = player.HorizontalInput != 0f && Mathf.Sign(player.HorizontalInput) == -player.WallDirection;
+                if (!holdingAway)
+                {
+                    player.ChangeState(new PlayerWallSlideState());
+                    return;
+                }
             }
 
             if (player.TryStartRailGrind()) return;
@@ -145,9 +171,17 @@ namespace EchoOfTheVoid.Player.States
 
         public void Update(PlayerController player)
         {
-            if (player.CheckAndConsumeJump()) // Coyote Time check
+            if (player.CheckAndConsumeJump(out bool isWallJump))
             {
-                player.ChangeState(new PlayerJumpState());
+                if (isWallJump)
+                {
+                    player.ExecuteWallJump();
+                    player.ChangeState(new PlayerJumpState(fromWallJump: true));
+                }
+                else
+                {
+                    player.ChangeState(new PlayerJumpState(fromWallJump: false));
+                }
                 return;
             }
 
@@ -165,10 +199,15 @@ namespace EchoOfTheVoid.Player.States
 
             if (player.TryStartRailGrind()) return;
 
-            if (player.IsTouchingWall && player.VerticalSpeedUp < 0f)
+            // Only enter wall slide if falling and NOT holding away from the wall
+            if (player.IsTouchingWall && player.VerticalSpeedUp <= 0.1f)
             {
-                player.ChangeState(new PlayerWallSlideState());
-                return;
+                bool holdingAway = player.HorizontalInput != 0f && Mathf.Sign(player.HorizontalInput) == -player.WallDirection;
+                if (!holdingAway)
+                {
+                    player.ChangeState(new PlayerWallSlideState());
+                    return;
+                }
             }
 
             if (player.IsGrounded)
@@ -197,18 +236,21 @@ namespace EchoOfTheVoid.Player.States
     public class PlayerWallSlideState : IPlayerState
     {
         private const float WALL_SLIDE_SPEED = -2.5f;
+        private const float DETACH_HOLD_TIME = 0.08f;
+        private float _detachTimer;
 
         public void Enter(PlayerController player)
         {
             player.ResetVerticalVelocity();
+            _detachTimer = 0f;
         }
 
         public void Update(PlayerController player)
         {
-            if (player.CheckAndConsumeJump())
+            if (player.CheckAndConsumeJump(out _))
             {
                 player.ExecuteWallJump();
-                player.ChangeState(new PlayerJumpState());
+                player.ChangeState(new PlayerJumpState(fromWallJump: true));
                 return;
             }
 
@@ -227,6 +269,24 @@ namespace EchoOfTheVoid.Player.States
             if (!player.IsTouchingWall)
             {
                 player.ChangeState(new PlayerFallState());
+                return;
+            }
+
+            // Smooth detachment when holding away from the wall
+            if (player.HorizontalInput != 0f && Mathf.Sign(player.HorizontalInput) == -player.WallDirection)
+            {
+                _detachTimer += Time.deltaTime;
+                if (_detachTimer >= DETACH_HOLD_TIME)
+                {
+                    // Gently push away so the collider doesn't immediately re-stick
+                    player.SetHorizontalVelocity(player.HorizontalInput * 2f);
+                    player.ChangeState(new PlayerFallState());
+                    return;
+                }
+            }
+            else
+            {
+                _detachTimer = 0f;
             }
         }
 
@@ -235,6 +295,7 @@ namespace EchoOfTheVoid.Player.States
             // Slide down with wall friction
             Vector2 vel = player.LinearVelocity;
             vel.y = Mathf.Max(vel.y * player.UpSign, WALL_SLIDE_SPEED) * player.UpSign;
+            vel.x = 0f;
             player.SetVelocity(vel);
         }
 
