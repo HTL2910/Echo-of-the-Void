@@ -3,14 +3,16 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using EchoOfTheVoid.Save;
 
+
 namespace EchoOfTheVoid.Core
 {
     /// <summary>Scene flow and pause state shared by the menus and the game (spec 9.2).</summary>
     public static class GameFlow
     {
-        public const string MainMenuScene        = "MainMenu";
-        /// <summary>Legacy prototype entry point (kept for Continue saves that stored this name).</summary>
-        public const string FirstGameplayScene   = "Level_01";
+        public const string MainMenuScene           = "MainMenu";
+        /// <summary>Campaign entry point. Falls back to Prototype_Level1 until 'Build All 20 Levels' has been run.</summary>
+        public const string FirstGameplayScene        = "Level_01";
+        public const string LegacyPrototypeScene      = "Prototype_Level1";
 
         private static bool _isPaused;
 
@@ -40,7 +42,11 @@ namespace EchoOfTheVoid.Core
         {
             GameSession.StartNewGame(slot);
             OnGameLoaded?.Invoke(GameSession.Current);
-            Load(LevelProgression.SceneName(1)); // Always start at Level 01
+            // Use Level_01 if it's in Build Settings; otherwise fall back to legacy prototype
+            string target = IsSceneInBuild(LevelProgression.SceneName(1))
+                ? LevelProgression.SceneName(1)
+                : LegacyPrototypeScene;
+            Load(target);
         }
 
         /// <returns>false if the slot has no valid save.</returns>
@@ -49,9 +55,14 @@ namespace EchoOfTheVoid.Core
             if (!GameSession.TryContinue(slot)) return false;
 
             string scene = GameSession.Current.sceneName;
-            // Migrate legacy save that stored "Prototype_Level1"
-            if (string.IsNullOrEmpty(scene) || scene == "Prototype_Level1")
-                scene = LevelProgression.SceneName(1);
+            // Migrate legacy save / fallback when campaign scenes not yet generated
+            if (string.IsNullOrEmpty(scene) || scene == LegacyPrototypeScene
+                || !IsSceneInBuild(scene))
+            {
+                scene = IsSceneInBuild(LevelProgression.SceneName(1))
+                    ? LevelProgression.SceneName(1)
+                    : LegacyPrototypeScene;
+            }
 
             OnGameLoaded?.Invoke(GameSession.Current);
             Load(scene);
@@ -79,6 +90,24 @@ namespace EchoOfTheVoid.Core
             IsPaused = false;
             Time.timeScale = 1f;
             SceneLoader(scene);
+        }
+
+        /// <summary>
+        /// Returns true if the scene name exists in the current Build Settings.
+        /// Works in both Editor and runtime builds.
+        /// </summary>
+        public static bool IsSceneInBuild(string sceneName)
+        {
+            int count = SceneManager.sceneCountInBuildSettings;
+            for (int i = 0; i < count; i++)
+            {
+                string path = SceneUtility.GetScenePathByBuildIndex(i);
+                // path is like "Assets/Scenes/Level_01.unity" — compare by filename
+                string name = System.IO.Path.GetFileNameWithoutExtension(path);
+                if (string.Equals(name, sceneName, System.StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+            return false;
         }
     }
 }
