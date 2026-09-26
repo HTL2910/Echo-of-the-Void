@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86bbb70eef6745e4827119c727c714ba, type: 3}
+  m_Name: EnemyData_RiftKnight
+  m_EditorClassIdentifier: EchoOfTheVoid.Runtime::EchoOfTheVoid.Enemies.RiftKnightDataSO
+  EnemyName: Rift Knight
+  Realm: 0
+  MaxHealth: 130
+  ContactDamage: 10
+  MoveSpeed: 3.8
+  AlertSpeed: 3.8
+  DetectionRadius: 6
+  PoiseMax: 100
+  PatrolDistance: 6
+  RealmSwitchInterval: 4
+  HitsBeforeRealmSwitch: 3
+  SlashDamage: 25
+  StompDamage: 35
+  ShockwaveHeight: 1.2
+  SlashRange: 1.6
+  StompRange: 4
+  AttackCooldown: 1.5
+  StompCooldown: 4

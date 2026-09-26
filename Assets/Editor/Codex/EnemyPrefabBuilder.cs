@@ -17,7 +17,68 @@ namespace EchoOfTheVoid.Editor.Codex
         {
             CreateVoidStriderPrefab();
             CreatePrismSentryPrefab();
+            CreateRiftKnightPrefab();
             Debug.Log("[Codex] Enemy prefabs created (skipped if already exist).");
+        }
+
+        private static void CreateRiftKnightPrefab()
+        {
+            const string prefabPath = "Assets/Prefabs/Enemies/RiftKnight.prefab";
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath) != null)
+            {
+                Debug.Log($"[Codex] Skipped RiftKnight — prefab already exists at {prefabPath}");
+                return;
+            }
+
+            const string dataPath = "Assets/Settings/Enemies/EnemyData_RiftKnight.asset";
+            var data = AssetDatabase.LoadAssetAtPath<RiftKnightDataSO>(dataPath);
+            if (data == null)
+            {
+                data = ScriptableObject.CreateInstance<RiftKnightDataSO>();
+                data.EnemyName = "Rift Knight";
+                data.Realm = RealmType.Prime;
+                data.MaxHealth = 130;
+                data.ContactDamage = 10;
+                data.MoveSpeed = 3.8f;
+                data.AlertSpeed = 3.8f;
+                data.DetectionRadius = 6f;
+                data.PoiseMax = 100f;
+                data.PatrolDistance = 6f;
+                data.SlashDamage = 25;
+                data.StompDamage = 35;
+                data.ShockwaveHeight = 1.2f;
+                data.RealmSwitchInterval = 4f;
+                data.HitsBeforeRealmSwitch = 3;
+                AssetDatabase.CreateAsset(data, dataPath);
+                AssetDatabase.SaveAssets();
+            }
+
+            var root = new GameObject("RiftKnight");
+            root.transform.localScale = Vector3.one;
+            int enemyLayer = LayerMask.NameToLayer("Enemy");
+            root.layer = enemyLayer >= 0 ? enemyLayer : 0;
+
+            var body = root.AddComponent<Rigidbody2D>();
+            body.constraints = RigidbodyConstraints2D.FreezeRotation;
+            var collider = root.AddComponent<BoxCollider2D>();
+            collider.size = new Vector2(1f, 1.8f);
+
+            root.AddComponent<EnemyAnimationDriver>();
+            root.AddComponent<EnemyRespawner>();
+            var knight = root.AddComponent<RiftKnight>();
+            var serializedKnight = new SerializedObject(knight);
+            serializedKnight.FindProperty("enemyData").objectReferenceValue = data;
+            serializedKnight.ApplyModifiedPropertiesWithoutUndo();
+
+            var visual = new GameObject("Visual");
+            visual.transform.SetParent(root.transform);
+            visual.transform.localPosition = Vector3.zero;
+            visual.transform.localScale = Vector3.one;
+            var renderer = visual.AddComponent<SpriteRenderer>();
+            renderer.color = new Color(0.2f, 0.9f, 1f, 1f);
+            visual.AddComponent<Animator>();
+
+            SavePrefab(root, prefabPath);
         }
 
         private static void CreateVoidStriderPrefab()
