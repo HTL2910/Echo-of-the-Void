@@ -87,7 +87,7 @@ namespace EchoOfTheVoid.Core
 
             // Persist completion
             GameSession.MarkBossDefeated($"LevelComplete_{CurrentLevelIndex}");
-            SaveService.TrySave(GameSession.ActiveSlot, GameSession.Current);
+            SaveService.Save(GameSession.Current, GameSession.ActiveSlot);
 
             int next = CurrentLevelIndex + 1;
             if (next > LevelProgression.TotalLevels)
