@@ -35,6 +35,7 @@ ALLOWED = {
         "Assets/Scripts/Feedback/", "Assets/Scripts/Settings/", "Assets/Scripts/EchoOfTheVoid.Runtime.asmdef",
         "Assets/Scripts/Environment/",  # trừ Mechanics/ (kiểm bên dưới)
         "Assets/Editor/", "Assets/Tests/", "Assets/Scenes/", "Assets/Prefabs/Levels/", "Assets/Prefabs/Player/",
+        "Assets/Plugins/", "Assets/Settings/", "Assets/DefaultVolumeProfile.asset",
         "ProjectSettings/", "Packages/", "Tools/",
         "Docs/", ".gitignore", ".claude/", "CLAUDE.md", "production/", "design/", "prototypes/",
     ],
@@ -42,6 +43,7 @@ ALLOWED = {
 # Vùng độc quyền: Claude không được vào trừ khi commit có [integrate]
 CLAUDE_FORBIDDEN = [
     "Assets/Scripts/Enemies/", "Assets/Scripts/Combat/", "Assets/Scripts/Bosses/",
+    "Assets/Settings/Enemies/",
     "Assets/Scripts/Environment/Mechanics/", "Assets/Editor/Codex/",
     "Assets/Art/", "Assets/Audio/", "Assets/Fonts/",
 ]
@@ -58,7 +60,7 @@ def violations(agent, files, integrate=False):
         if agent == "claude":
             if not integrate and any(f.startswith(p) for p in CLAUDE_FORBIDDEN):
                 bad.append(f)
-            elif not any(f.startswith(p) for p in ALLOWED["claude"]) and not integrate:
+            elif not any(f.startswith(p) or f == p.rstrip('/') + '.meta' for p in ALLOWED["claude"]) and not integrate:
                 bad.append(f)
         elif not any(f.startswith(p) or f == p.rstrip('/') + '.meta' for p in ALLOWED[agent]):
             bad.append(f)

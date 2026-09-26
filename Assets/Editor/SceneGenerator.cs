@@ -2,6 +2,7 @@ using System.IO;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.Tilemaps;
 using UnityEngine.UI;
@@ -84,12 +85,17 @@ namespace EchoOfTheVoid.Editor
             // Add direct CameraFollow2D (100% reliable tracking)
             var camFollow = cameraObj.AddComponent<CameraFollow2D>();
 
-            // 5. Setup 2D Global Light (URP)
+            // 5. Setup Post-Processing Global Volume & 2D Lighting (URP)
+            GameObject volumeObj = new GameObject("Global Volume");
+            var globalVolume = volumeObj.AddComponent<Volume>();
+            globalVolume.isGlobal = true;
+            globalVolume.profile = AssetDatabase.LoadAssetAtPath<VolumeProfile>("Assets/DefaultVolumeProfile.asset");
+
             GameObject lightObj = new GameObject("Global 2D Light");
             var light2D = lightObj.AddComponent<Light2D>();
             light2D.lightType = Light2D.LightType.Global;
-            light2D.color = Color.white;
-            light2D.intensity = 1.0f;
+            light2D.color = new Color(0.24f, 0.30f, 0.44f, 1f); // Deep atmospheric moody void blue
+            light2D.intensity = 0.55f;
 
             // 6. Setup Managers & Audio
             GameObject managersObj = new GameObject("Managers");
@@ -142,6 +148,7 @@ namespace EchoOfTheVoid.Editor
             }
             managersObj.AddComponent<LowHealthAudio>().Configure(
                 AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/SFX/Custom/SFX_Heartbeat_Loop_01.ogg"));
+            var postProcessCtrl = managersObj.AddComponent<RealityPostProcessController>();
 
             // 7. Setup Player
             GameObject playerObj = new GameObject("Player");
@@ -194,6 +201,20 @@ namespace EchoOfTheVoid.Editor
             var playerCtrl = playerObj.GetComponent<PlayerController>() ?? playerObj.AddComponent<PlayerController>();
             playerCtrl.SetGroundLayer((1 << neutralLayer) | (1 << primeLayer) | (1 << echoLayer));
 
+            // Add Player Aura Point Light (Cyan/Emerald Chrono glow in Prime, Amethyst in Echo)
+            var auraObj = new GameObject("KaelAuraLight");
+            auraObj.transform.SetParent(playerObj.transform, false);
+            auraObj.transform.localPosition = new Vector3(0f, 0.2f, 0f);
+            var playerAuraLight = auraObj.AddComponent<Light2D>();
+            playerAuraLight.lightType = Light2D.LightType.Point;
+            playerAuraLight.color = new Color(0.15f, 0.95f, 0.85f, 1f);
+            playerAuraLight.pointLightInnerRadius = 0.8f;
+            playerAuraLight.pointLightOuterRadius = 6.0f;
+            playerAuraLight.intensity = 1.3f;
+            playerAuraLight.falloffIntensity = 0.65f;
+
+            postProcessCtrl.Configure(globalVolume, light2D, playerAuraLight);
+
             // Player becomes a prefab (reused on later runs so artist edits survive)
             playerObj = SaveOrReusePrefab(playerObj, "Player", "Player",
                 typeof(PlayerAnimationDriver), typeof(AbilitySet), typeof(EchoAnchor));
@@ -205,6 +226,7 @@ namespace EchoOfTheVoid.Editor
 
             // 8. Build Environment (Level 1-1 Sandbox)
             GameObject levelRoot = new GameObject("Environment");
+            CreateAtmosphericBackground(levelRoot.transform, boxSprite);
 
             // Load Environment Sprites
             Sprite sprNeutralPlat = LoadSprite("Assets/Art/Sprites/Environment/spr_platform_neutral.png") ?? boxSprite;
@@ -1275,6 +1297,73 @@ namespace EchoOfTheVoid.Editor
             if (!Directory.Exists(SCENE_DIR)) Directory.CreateDirectory(SCENE_DIR);
             EditorSceneManager.SaveScene(scene, MENU_SCENE_PATH);
             Debug.Log($"[SceneGenerator] Saved Main Menu Scene to {MENU_SCENE_PATH}");
+        }
+
+        /// <summary>Builds atmospheric multi-layer background with parallax and ambient particles.</summary>
+        private static void CreateAtmosphericBackground(Transform parent, Sprite boxSprite)
+        {
+            var bgRoot = new GameObject("Background_Parallax");
+            bgRoot.transform.SetParent(parent, false);
+            bgRoot.AddComponent<ParallaxBackground>();
+
+            // Layer 0: Deep Void starry nebula backdrop (immense distance)
+            var deepSky = new GameObject("Layer_0_DeepVoid");
+            deepSky.transform.SetParent(bgRoot.transform, false);
+            deepSky.transform.position = new Vector3(28f, 6f, 0f);
+            var deepSr = deepSky.AddComponent<SpriteRenderer>();
+            deepSr.sprite = boxSprite;
+            deepSr.color = new Color(0.04f, 0.06f, 0.12f, 1f); // Deep Cosmic Navy Void
+            deepSky.transform.localScale = new Vector3(160f, 40f, 1f);
+            deepSr.sortingOrder = -30;
+
+            // Layer 0.5: Ethereal Chrono Nebula glow band
+            var nebula = new GameObject("Layer_0_NebulaBand");
+            nebula.transform.SetParent(bgRoot.transform, false);
+            nebula.transform.position = new Vector3(28f, 10f, 0f);
+            var nebSr = nebula.AddComponent<SpriteRenderer>();
+            nebSr.sprite = boxSprite;
+            nebSr.color = new Color(0.07f, 0.16f, 0.28f, 0.75f); // Luminous cyan/teal nebula band
+            nebula.transform.localScale = new Vector3(160f, 18f, 1f);
+            nebSr.sortingOrder = -25;
+
+            // Layer 1: Distant Ancient Megastructure Silhouettes (towers, clockwork pillars)
+            var distantPillars = new GameObject("Layer_1_DistantSilhouettes");
+            distantPillars.transform.SetParent(bgRoot.transform, false);
+            distantPillars.transform.position = new Vector3(0f, 0f, 0f);
+            Color silhouetteColor = new Color(0.06f, 0.09f, 0.16f, 0.85f);
+            for (int i = -2; i <= 6; i++)
+            {
+                float x = i * 18f + 5f;
+                var colObj = new GameObject($"DistantPillar_{i}");
+                colObj.transform.SetParent(distantPillars.transform, false);
+                colObj.transform.position = new Vector3(x, 8f, 0f);
+                colObj.transform.localScale = new Vector3(6f, 32f, 1f);
+                var sr = colObj.AddComponent<SpriteRenderer>();
+                sr.sprite = boxSprite;
+                sr.color = silhouetteColor;
+                sr.sortingOrder = -20;
+            }
+
+            // Layer 2: Midground Gothic Tech Beams & Conduits
+            var midgroundBeams = new GameObject("Layer_2_MidBeams");
+            midgroundBeams.transform.SetParent(bgRoot.transform, false);
+            midgroundBeams.transform.position = new Vector3(0f, 0f, 0f);
+            Color beamColor = new Color(0.09f, 0.13f, 0.22f, 0.75f);
+            for (int i = -1; i <= 5; i++)
+            {
+                float x = i * 22f - 6f;
+                var beamObj = new GameObject($"GothicBeam_{i}");
+                beamObj.transform.SetParent(midgroundBeams.transform, false);
+                beamObj.transform.position = new Vector3(x, 5f, 0f);
+                beamObj.transform.localScale = new Vector3(2.5f, 22f, 1f);
+                var sr = beamObj.AddComponent<SpriteRenderer>();
+                sr.sprite = boxSprite;
+                sr.color = beamColor;
+                sr.sortingOrder = -12;
+            }
+
+            // Layer 3: Floating Ambient Dust Motes (glowing specks catching URP light)
+            ParallaxBackground.CreateAmbientDustParticles(bgRoot.transform, new Color(0.35f, 0.85f, 1f, 0.7f));
         }
 
         /// <summary>Build order: the title screen first, then the game.</summary>
