@@ -726,13 +726,13 @@ namespace EchoOfTheVoid.Editor
             Font fontSpaceMono = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/SpaceMono-Regular.ttf")
                               ?? fontOrbitron;
 
-            // Load HUD Sprites
-            Sprite sprPanel = LoadSprite("Assets/Art/UI/HUD/hud_panel_frame.png");
+            // Load HUD Sprites (Fantasy Gothic Aether-punk Theme)
+            Sprite sprPanel = LoadSprite("Assets/Art/UI/panel_frame_neon.png") ?? LoadSprite("Assets/Art/UI/HUD/hud_panel_frame.png");
             Sprite sprDial = LoadSprite("Assets/Art/UI/HUD/hud_realm_dial.png");
-            Sprite sprBarFrame = LoadSprite("Assets/Art/UI/HUD/hud_bar_frame.png");
-            Sprite sprHpFill = LoadSprite("Assets/Art/UI/HUD/hud_bar_hp_fill.png");
-            Sprite sprCeFill = LoadSprite("Assets/Art/UI/HUD/hud_bar_ce_fill.png");
-            Sprite sprSlotFrame = LoadSprite("Assets/Art/UI/HUD/hud_slot_frame.png");
+            Sprite sprBarFrame = LoadSprite("Assets/Art/UI/hud_bar_bg.png") ?? LoadSprite("Assets/Art/UI/HUD/hud_bar_frame.png");
+            Sprite sprHpFill = LoadSprite("Assets/Art/UI/hud_health_fill.png") ?? LoadSprite("Assets/Art/UI/HUD/hud_bar_hp_fill.png");
+            Sprite sprCeFill = LoadSprite("Assets/Art/UI/hud_energy_fill.png") ?? LoadSprite("Assets/Art/UI/HUD/hud_bar_ce_fill.png");
+            Sprite sprSlotFrame = LoadSprite("Assets/Art/UI/icon_frame.png") ?? LoadSprite("Assets/Art/UI/HUD/hud_slot_frame.png");
             Sprite sprGuideBg = LoadSprite("Assets/Art/UI/HUD/hud_guide_bg.png");
 
             Sprite iconDash = LoadSprite("Assets/Art/UI/Icons/icon_ability_gravity.png");
