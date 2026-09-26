@@ -38,7 +38,7 @@ ALLOWED = {
         "Assets/Prefabs/Environment/",
         "Assets/Plugins/", "Assets/Settings/", "Assets/DefaultVolumeProfile.asset",
         "ProjectSettings/", "Packages/", "Tools/",
-        "Docs/", ".gitignore", ".claude/", "CLAUDE.md", "production/", "design/", "prototypes/",
+        "Docs/", ".gitignore", ".claude/", "CLAUDE.md", "README.md", "production/", "design/", "prototypes/",
     ],
 }
 # Vùng độc quyền: Claude không được vào trừ khi commit có [integrate]
