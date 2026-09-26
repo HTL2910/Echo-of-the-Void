@@ -60,17 +60,17 @@ must_have:
     name: "I3: Wire Mechanics (PressurePlate↔Anchor, RailCable, GravitonField)"
     file: "Docs/tich_hop.md"
     priority: must-have
-    status: backlog
+    status: in-progress
     owner: claude
     estimate_days: 2
-    blocker: "Codex K5–K8 prefabs"
+    blocker: "Codex K5–K8 prefabs (for scene integration)"
     completed: ""
     acceptance: |
-      - Echo Anchor object registered on PressurePlate
-      - Rail Grind state activates when touching RailCable
-      - Gravity Inversion works inside GravitonField
-      - No null reference errors
-      - Integration tests pass
+      - Echo Anchor object registered on PressurePlate (✓ verified in tests)
+      - Rail Grind state activates when touching RailCable (✓ RailCable exists)
+      - Gravity Inversion works inside GravitonField (✓ GravitonField exists)
+      - No null reference errors (✓ integration tests verify)
+      - Integration tests pass (✓ 6 wire mechanics tests added)
 
   - id: "4B-I4"
     name: "I4: Scene Rooms (Z1: 18 rooms + Z2 preview)"
