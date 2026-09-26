@@ -97,6 +97,7 @@ namespace EchoOfTheVoid.EditorTools
 
             // Camera
             SetupCamera(def);
+            SpawnBackground(def);
 
             // Environment root
             var levelRoot = new GameObject("Environment").transform;
@@ -326,6 +327,22 @@ namespace EchoOfTheVoid.EditorTools
                 player.tag = "Player";
             }
             player.transform.position = new Vector3(x, y, 0);
+        }
+
+        // ── Background Setup ──────────────────────────────────────────────────────
+        private static void SpawnBackground(LevelDef def)
+        {
+            var bgGo = new GameObject("BackgroundSetup");
+            var setup = bgGo.AddComponent<EchoOfTheVoid.Environment.BackgroundSetup>();
+
+            // Set theme override via serialized property
+            var so = new UnityEditor.SerializedObject(setup);
+            var themeProp = so.FindProperty("themeOverride");
+            if (themeProp != null)
+            {
+                themeProp.enumValueIndex = (int)def.Theme;
+                so.ApplyModifiedPropertiesWithoutUndo();
+            }
         }
 
         // ── Camera Setup ─────────────────────────────────────────────────────────
