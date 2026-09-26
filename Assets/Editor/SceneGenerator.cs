@@ -238,6 +238,15 @@ namespace EchoOfTheVoid.Editor
             Sprite iconWallJump = LoadSprite("Assets/Art/UI/Icons/icon_ability_walljump.png") ?? boxSprite;
             Sprite iconResonance = LoadSprite("Assets/Art/UI/Icons/icon_ability_resonance.png") ?? boxSprite;
 
+            // Dark Fantasy Enemy Sprites (Prime Realm idle as default SpriteRenderer)
+            const string DF = "Assets/Art/Sprites/Enemies/DarkFantasy";
+            Sprite sprCrawlerPrime  = LoadSprite($"{DF}/chrono_crawler_prime_walk.png")   ?? boxSprite;
+            Sprite sprCrawlerEcho   = LoadSprite($"{DF}/chrono_crawler_echo_walk.png")    ?? boxSprite;
+            Sprite sprWeaverPrime   = LoadSprite($"{DF}/void_weaver_prime_idle.png")      ?? boxSprite;
+            Sprite sprWeaverEcho    = LoadSprite($"{DF}/void_weaver_echo_idle.png")       ?? boxSprite;
+            Sprite sprKnightPrime   = LoadSprite($"{DF}/rift_knight_prime_idle.png")      ?? boxSprite;
+            Sprite sprKnightEcho    = LoadSprite($"{DF}/rift_knight_echo_idle.png")       ?? boxSprite;
+
             Color neutralColor = Color.white;
             Color primeColor = new Color(0.0f, 0.85f, 1.0f, 1f);  // Cyan
             Color echoColor = new Color(0.85f, 0.25f, 1.0f, 1f); // Purple
@@ -272,6 +281,7 @@ namespace EchoOfTheVoid.Editor
                 combatRoot.transform,
                 sprNeutralPlat, sprPrimePlat, sprEchoPlat, sprStation, sprGoalRift,
                 iconWallJump, iconResonance, boxSprite,
+                sprCrawlerPrime, sprCrawlerEcho, sprWeaverPrime, sprWeaverEcho, sprKnightPrime, sprKnightEcho,
                 neutralColor, primeColor, echoColor,
                 neutralLayer, primeLayer, echoLayer, enemyLayer, hazardLayer, interactableLayer,
                 dummyPrimeSO, dummyEchoSO, crawlerSO, weaverSO
@@ -1270,6 +1280,7 @@ namespace EchoOfTheVoid.Editor
             Transform combatRoot,
             Sprite sprNeutralPlat, Sprite sprPrimePlat, Sprite sprEchoPlat, Sprite sprStation, Sprite sprGoalRift,
             Sprite iconWallJump, Sprite iconResonance, Sprite boxSprite,
+            Sprite sprCrawlerPrime, Sprite sprCrawlerEcho, Sprite sprWeaverPrime, Sprite sprWeaverEcho, Sprite sprKnightPrime, Sprite sprKnightEcho,
             Color neutralColor, Color primeColor, Color echoColor,
             int neutralLayer, int primeLayer, int echoLayer, int enemyLayer, int hazardLayer, int interactableLayer,
             EnemyDataSO dummyPrimeSO, EnemyDataSO dummyEchoSO, EnemyDataSO crawlerSO, EnemyDataSO weaverSO)
@@ -1290,7 +1301,7 @@ namespace EchoOfTheVoid.Editor
 
             CreatePlatform(geom01, "Plat_Tutorial_1", new Vector3(-20f, 2.5f, 0f), new Vector3(3f, 0.6f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
             CreatePlatform(geom01, "Plat_Tutorial_2", new Vector3(-15f, 4.5f, 0f), new Vector3(3f, 0.6f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
-            CreateDummy(enemy01, "Dummy_Prime", new Vector3(-13f, 1.0f, 0f), RealmType.Prime, boxSprite, enemyLayer, dummyPrimeSO);
+            CreateDummy(enemy01, "Dummy_Prime", new Vector3(-13f, 1.0f, 0f), RealmType.Prime, sprKnightPrime, enemyLayer, dummyPrimeSO);
 
             // -------------------------------------------------------------
             // [Row 1] Z1_R02: Outer Bastion (24x14 m, X: -10..14, Y: 0..14)
@@ -1331,7 +1342,7 @@ namespace EchoOfTheVoid.Editor
             CreatePlatform(geom03, "Plat_ShaftTop_R03", new Vector3(33.25f, 10.5f, 0f), new Vector3(3.5f, 0.6f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
             CreatePickup(interact03, "Pickup_PistonBoots", new Vector3(33.25f, 11.4f, 0f), iconWallJump, AbilityFlags.WallJump, "PISTON BOOTS", new Color(1f, 0.85f, 0.2f, 1f));
 
-            CreateCrawler(enemy03, "Crawler_Prime_R03", new Vector3(22f, 0.6f, 0f), boxSprite, enemyLayer, crawlerSO);
+            CreateCrawler(enemy03, "Crawler_Prime_R03", new Vector3(22f, 0.6f, 0f), sprCrawlerPrime, enemyLayer, crawlerSO);
 
             // -------------------------------------------------------------
             // [Row 1] Z1_R04: Steam Vent Shaft (16x14 m, X: 44..60, Y: 0..14)
@@ -1367,7 +1378,7 @@ namespace EchoOfTheVoid.Editor
 
             CreatePlatform(geom05, "Ledge_Climb_R05", new Vector3(-5f, 16.5f, 0f), new Vector3(4f, 0.6f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
             BuildMechanic<EnergyGate>(mech05, "EnergyGate_R05", new Vector3(12f, 16f, 0f), new Vector2(0.5f, 4f), new Color(0.3f, 0.8f, 1f, 0.7f), boxSprite, hazardLayer, true, true);
-            CreateVoidWeaver(enemy05, "Weaver_Echo_R05", new Vector3(6f, 22f, 0f), boxSprite, enemyLayer, weaverSO);
+            CreateVoidWeaver(enemy05, "Weaver_Echo_R05", new Vector3(6f, 22f, 0f), sprWeaverEcho, enemyLayer, weaverSO);
 
             // -------------------------------------------------------------
             // [Row 2] Z1_R06: Piston Gallery (32x14 m, X: 16..48, Y: 14..28)
@@ -1406,7 +1417,7 @@ namespace EchoOfTheVoid.Editor
 
             CreatePlatform(geom07, "Plat_Central_R07", new Vector3(58f, 18.5f, 0f), new Vector3(6f, 0.8f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
             CreateRealityPlatform(geom07, "Plat_Upper_R07", new Vector3(62f, 23.5f, 0f), new Vector3(5f, 0.6f, 1f), RealmType.Prime, primeColor, sprPrimePlat, primeLayer);
-            CreateCrawler(enemy07, "Crawler_Prime_R07", new Vector3(58f, 19.3f, 0f), boxSprite, enemyLayer, crawlerSO);
+            CreateCrawler(enemy07, "Crawler_Prime_R07", new Vector3(58f, 19.3f, 0f), sprCrawlerPrime, enemyLayer, crawlerSO);
 
             // -------------------------------------------------------------
             // [Row 3] Z1_R08: Smelting Chamber (36x16 m, X: 48..84, Y: 28..44)
