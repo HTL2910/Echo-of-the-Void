@@ -1,59 +1,86 @@
-# Bàn giao B2: Bộ Sprite Kẻ Địch Dark Fantasy Aether-punk (50 Sprites)
+# Bàn giao B2: Bộ Sprite Kẻ Địch Dark Fantasy Aether-punk (Đa dạng 10 Archetypes - 82+ Sprites)
 
 - **Người làm:** anti
 - **Ngày bàn giao:** 2026-09-26
-- **Ưu tiên:** B2 (Sprite kẻ địch: Rift Knight, Void Strider, Chrono Crawler, Void Weaver, Prism Sentry)
+- **Ưu tiên:** B2 & Mở rộng hệ sinh thái quái vật đa dạng (Bestiary Expansion)
 
 ---
 
 ## 1. Mục tiêu hoàn thành
-Thay thế toàn bộ các sprite placeholder cũ (16x16 / 32x24 thô sơ) bằng bộ sprite **Dark Fantasy Gothic Aether-punk** chi tiết cao, thiết kế đồng bộ với tone Void của game:
-- Bộ giáp Gothic thép đen, viền sừng, gai nhọn hư không.
-- Đồng bộ cơ chế 2 Realm: **Prime Realm (Lõi Neon Cyan `#00D9FF`)** và **Echo Realm (Lõi Neon Orange `#FF6B35`)**.
-- Độ phân giải chuẩn PPU = 32 (hoặc 64 tùy scale prefab), Pixel-Perfect (Point Filter, no compression, no anti-aliasing).
-- Đầy đủ `.meta` file có cấu hình sẵn Pivot chuẩn (Bottom-Center `(0.5, 0.0)` cho quái đất, Center `(0.5, 0.5)` cho quái bay).
+Mở rộng hệ sinh thái quái vật từ 5 loài cơ bản lên **10 Chủng loài Đa dạng (Archetypes)** đặc trưng của dòng game Metroidvania / Dark Fantasy Gothic Aether-punk:
+- **Đầy đủ 2 Realm:** Tất cả đều có phiên bản **Prime Realm (Lõi Neon Cyan `#00D9FF`)** và **Echo Realm (Lõi Neon Orange `#FF6B35`)**.
+- **Độ phân giải chuẩn:** PPU = 32 (pixel-perfect), Point Filter, Pivot chuẩn `(0.5, 0.0)` cho quái đất, `(0.5, 0.5)` cho quái bay, `(0.5, 0.9)` cho quái bám trần.
+- **Tập hợp 10 vai trò chiến thuật:** Đảm bảo độ sâu cho màn chơi (Level Design) từ quái tuần tra, quái phục kích trần nhà, bẫy dịch thể phân tách, xạ thủ bắn tỉa, tới quái tạ đập đất và pháp sư triệu hồi.
 
 ---
 
-## 2. Danh mục Assets bàn giao (`Assets/Art/Sprites/Enemies/DarkFantasy/`)
+## 2. Danh mục 10 Archetypes Kẻ Địch (`Assets/Art/Sprites/Enemies/DarkFantasy/`)
 
-### A. Rift Knight (64×64 - Heavy Gothic Plate Armor, Horned Great-Helm, Tower Shield & Greatsword)
-- `rift_knight_prime_idle.png` & `rift_knight_echo_idle.png`: Tư thế thủ với khiên tháp và cự kiếm sau lưng.
-- `rift_knight_prime_slash.png` & `rift_knight_echo_slash.png`: Đòn chém vung cự kiếm kèm vệt chém lưỡi liềm năng lượng Void.
-- `rift_knight_prime_stomp.png` & `rift_knight_echo_stomp.png`: Đòn dậm đất tạo sóng xung kích địa chấn.
+### I. 5 Chủng Loài Cơ Bản Đã Nâng Cấp
+1. **Rift Knight (64×64 - Heavy Melee Knight)**
+   - Sprites: `rift_knight_{prime/echo}_idle.png`, `slash.png`, `stomp.png`
+   - Vai trò: Đấu sĩ thiết giáp, khiên tháp và cự kiếm, dậm đất tạo địa chấn.
+2. **Void Strider (64×64 - Fast Predator)**
+   - Sprites: `void_strider_{prime/echo}_idle.png`, `slash.png`, `pounce.png`
+   - Vai trò: Quái săn mồi di chuyển nhanh, chân khớp ngược, vồ mồi từ trên không.
+3. **Void Weaver (48×48 - Ranged Caster)**
+   - Sprites: `void_weaver_{prime/echo}_idle.png`, `shoot.png`
+   - Vai trò: Bóng ma áo choàng bay lơ lửng, tích tụ cầu hư không bắn tầm xa.
+4. **Chrono Crawler (48×48 - Armored Beetle)**
+   - Sprites: `chrono_crawler_{prime/echo}_walk.png`, `charge.png`
+   - Vai trò: Bọ thiết giáp bánh răng bò đất, tích điện húc thẳng.
+5. **Prism Sentry (48×48 - Laser Turret)**
+   - Sprites: `prism_sentry_{prime/echo}_idle.png`, `beam.png`
+   - Vai trò: Con mắt pha lê bay lơ lửng, quét và khóa mục tiêu bắn laser thẳng.
 
-### B. Void Strider (64×64 - Shadow Predator, Digitigrade Legs, Spine Spikes, Twin Energy Claws)
-- `void_strider_prime_idle.png` & `void_strider_echo_idle.png`: Tư thế rình mồi cúi thấp, gai lưng phát sáng.
-- `void_strider_prime_slash.png` & `void_strider_echo_slash.png`: Đòn cào vuốt đôi cận chiến với tia vuốt năng lượng.
-- `void_strider_prime_pounce.png` & `void_strider_echo_pounce.png`: Tư thế vồ mồi từ trên không (Apex Pounce).
+### II. 5 Chủng Loài Mới Bổ Sung (Đa dạng hóa Hệ sinh thái)
+6. **Blight Gargoyle (48×48 - Ceiling Ambusher & Dive Bomber)**
+   - Sprites:
+     - `blight_gargoyle_{prime/echo}_perch.png`: Bám trần/gờ tường, thu cánh ngụy trang thành tượng đá.
+     - `blight_gargoyle_{prime/echo}_swoop.png`: Bung cánh sà xuống bổ nhào với vận tốc cao.
+     - `blight_gargoyle_{prime/echo}_slash.png`: Vung móng vuốt cào xé mục tiêu.
+   - Gameplay: Trị lối chơi rush nhanh của player ở các hành lang cao, tạo bất ngờ.
 
-### C. Void Weaver (48×48 - Tattered Hooded Specter with Glowing Void Orb)
-- `void_weaver_prime_idle.png` & `void_weaver_echo_idle.png`: Áo choàng rách bay lơ lửng, ánh mắt ma quái trong mũ trùm, cầu năng lượng trước ngực.
-- `void_weaver_prime_shoot.png` & `void_weaver_echo_shoot.png`: Giơ tay bắn đạn cầu hư không Rift Projectile.
+7. **Void Ooze & Mini Spawn (32×32 & 20×20 - Splitting Biohazard)**
+   - Sprites:
+     - `void_ooze_{prime/echo}_crawl.png`: Khối nhờn bò trườn co giãn.
+     - `void_ooze_{prime/echo}_jump.png`: Nảy vọt lên cao bắn giọt acid.
+     - `void_ooze_{prime/echo}_split.png`: Phân chia tế bào khi bị tiêu diệt.
+     - `void_ooze_spawn_{prime/echo}_hop.png`: Slime con nảy lắt nhắt gây phiền toái.
+   - Gameplay: Bẫy hầm ngục hẹp, khi chết phân chia thành 2 quái con.
 
-### D. Chrono Crawler (48×48 - Gothic Clockwork Scarab, Bladed Mandibles & Clockwork Core)
-- `chrono_crawler_prime_walk.png` & `chrono_crawler_echo_walk.png`: Bọ cơ khí 6 chân gai nhọn, mai thép viền đồng.
-- `chrono_crawler_prime_charge.png` & `chrono_crawler_echo_charge.png`: Nạp điện tích năng lượng vào cặp kìm sắc nhọn để lao tới húc.
+8. **Void Cultist (48×48 - Backline Hexer & Ritual Summoner)**
+   - Sprites:
+     - `void_cultist_{prime/echo}_idle.png`: Tà áo rách bay phập phồng, cầm trượng đầu lâu.
+     - `void_cultist_{prime/echo}_cast.png`: Giơ cao trượng tích tụ quả cầu nguyền rủa.
+     - `void_cultist_{prime/echo}_ritual.png`: Cắm trượng tạo vòng tròn ma pháp nổ dưới chân player.
+   - Gameplay: Quái hỗ trợ đứng sau đội hình, buộc người chơi phải dash vào ám sát trước.
 
-### E. Prism Sentry (48×48 - Floating Gothic Reliquary Eyeball & Focusing Energy Prism)
-- `prism_sentry_prime_idle.png` & `prism_sentry_echo_idle.png`: Con mắt pha lê lơ lửng với các vòng xoay cơ khí viền vàng đồng.
-- `prism_sentry_prime_beam.png` & `prism_sentry_echo_beam.png`: Khẩu pháo mắt phát tia laser bắn thẳng.
+9. **Crystalline Golem (64×64 - Heavy Bruiser / Unstoppable Colossus)**
+   - Sprites:
+     - `void_golem_{prime/echo}_idle.png`: Quái đá tinh thể khổng lồ, mắt cyclops rực sáng.
+     - `void_golem_{prime/echo}_smash.png`: Giáng tay búa đá xuống đất tạo sóng chấn động.
+     - `void_golem_{prime/echo}_charge.png`: Húc vai càn quét với khiên chắn tinh thể.
+   - Gameplay: Siêu quái trâu bò, miễn nhiễm stagger đòn đánh nhẹ, yêu cầu né tránh hoặc dùng kỹ năng không gian.
 
-### F. Master Showcase Preview
-- `dark_fantasy_bestiary_preview.png`: Bảng tổng hợp showcase tất cả các chủng loài kẻ địch đặt cạnh nhau để duyệt phong cách đồ họa.
+10. **Bone Skulker (48×48 - Gothic Long-range Crossbowman)**
+    - Sprites:
+      - `bone_skulker_{prime/echo}_idle.png`: Bộ xương khoác khăn choàng canh gác.
+      - `bone_skulker_{prime/echo}_aim.png`: Giương nỏ ngắm thẳng với tia laser định vị.
+      - `bone_skulker_{prime/echo}_shoot.png`: Bắn tên hư không xuyên thấu có vệt neon.
+    - Gameplay: Đặt trên các mỏm đá cao/platform xa, ép người chơi phải vừa di chuyển né tên vừa leo trèo.
+
+### III. Master Showcase Preview
+- `dark_fantasy_bestiary_preview.png`: Bảng tổng hợp showcase đầy đủ cả 10 Chủng Loài Kẻ Địch đặt song song 2 thể Prime & Echo.
 
 ---
 
-## 3. Trạng thái đáp ứng Yêu cầu giữa các Agent
-- Giải quyết trực tiếp yêu cầu từ Codex trong `Docs/yeu_cau_giua_agent.md`:
-  > *"Kích thước và thông số Visual cho Rift Knight (K5) và Boss Z2 Myra & Z3 Doppelganger (K6) | Assets/Art/Sprites/Enemies/ & Bosses/"*
-- Các prefab `RiftKnight.prefab`, `VoidStrider.prefab`, `PrismSentry.prefab` giờ đây đã có sẵn sprite Visual chuẩn Dark Fantasy để gắn trực tiếp vào `SpriteRenderer` của child `Visual` mà không làm lệch root scale hay collider.
-
----
-
-## 4. Cần Claude / Codex nối gì
-1. **Prefab Visual:** Kéo sprite `*_idle.png` tương ứng vào `SpriteRenderer.m_Sprite` của child `Visual` trong:
-   - `Assets/Prefabs/Enemies/RiftKnight.prefab`
-   - `Assets/Prefabs/Enemies/VoidStrider.prefab`
-   - `Assets/Prefabs/Enemies/PrismSentry.prefab`
-2. **Animation:** Nối các frame action (`slash`, `stomp`, `pounce`, `shoot`, `charge`) vào `AnimationClip` của từng quái theo state trong `EnemyAnimationDriver`.
+## 3. Hướng dẫn Tích hợp dành cho Codex & Claude
+1. **Asset Location:** `Assets/Art/Sprites/Enemies/DarkFantasy/`
+2. **Import Settings:** Đã cấu hình sẵn toàn bộ `.meta` file:
+   - `FilterMode: Point (no filter)`
+   - `TextureFormat: RGBA32 (no compression)`
+   - `Pixels Per Unit: 32`
+3. **Phân công tiếp theo:**
+   - **Codex:** Kế thừa `EnemyBase` để viết AI behavior cho 5 quái mới (`BlightGargoyle.cs`, `VoidOoze.cs`, `VoidCultist.cs`, `CrystallineGolem.cs`, `BoneSkulker.cs`).
+   - **Claude:** Tạo Prefab trong `Assets/Prefabs/Enemies/` và đưa vào các màn chơi mở rộng (Zone 2, Zone 3).
