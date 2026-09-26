@@ -137,8 +137,8 @@ namespace EchoOfTheVoid.Player.States
                 }
             }
 
-            // Only transition to wall slide if falling/descending, NOT while rising from a jump!
-            if (player.IsTouchingWall && !player.IsGrounded && player.VerticalSpeedUp <= 0.1f)
+            // Only enter wall slide when clearly falling downward (not rising from a jump)
+            if (player.IsTouchingWall && !player.IsGrounded && player.VerticalSpeedUp < -1f)
             {
                 bool holdingAway = player.HorizontalInput != 0f && Mathf.Sign(player.HorizontalInput) == -player.WallDirection;
                 if (!holdingAway)
@@ -199,8 +199,8 @@ namespace EchoOfTheVoid.Player.States
 
             if (player.TryStartRailGrind()) return;
 
-            // Only enter wall slide if falling and NOT holding away from the wall
-            if (player.IsTouchingWall && player.VerticalSpeedUp <= 0.1f)
+            // Only enter wall slide when clearly falling downward (not rising)
+            if (player.IsTouchingWall && player.VerticalSpeedUp < -1f)
             {
                 bool holdingAway = player.HorizontalInput != 0f && Mathf.Sign(player.HorizontalInput) == -player.WallDirection;
                 if (!holdingAway)

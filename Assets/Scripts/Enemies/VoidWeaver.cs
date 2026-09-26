@@ -194,8 +194,9 @@ namespace EchoOfTheVoid.Enemies
             projObj.transform.localScale = new Vector3(0.5f, 0.5f, 1f);
 
             var sr = projObj.AddComponent<SpriteRenderer>();
-            sr.sprite = projectileSprite ?? spriteRenderer?.sprite;
+            sr.sprite = projectileSprite ?? GetOrCreateCircleSprite();
             sr.color = new Color(0.85f, 0.2f, 1.0f, 1f);
+            sr.sortingOrder = 5; // Render on top of everything
 
             var proj = projObj.AddComponent<EchoProjectile>();
             proj.Initialize(dir);
@@ -210,12 +211,35 @@ namespace EchoOfTheVoid.Enemies
             mineObj.transform.localScale = new Vector3(0.7f, 0.7f, 1f);
 
             var sr = mineObj.AddComponent<SpriteRenderer>();
-            sr.sprite = projectileSprite ?? spriteRenderer?.sprite;
+            sr.sprite = projectileSprite ?? GetOrCreateCircleSprite();
             sr.color = new Color(0.7f, 0.1f, 0.9f, 0.85f);
+            sr.sortingOrder = 5;
 
             // Mine drifts slightly then remains stationary
             var proj = mineObj.AddComponent<EchoProjectile>();
             proj.Initialize(Vector2.zero);
+        }
+
+        // Fallback: generate a white filled circle sprite at runtime so projectiles are always visible
+        private static Sprite _cachedCircleSprite;
+        private static Sprite GetOrCreateCircleSprite()
+        {
+            if (_cachedCircleSprite != null) return _cachedCircleSprite;
+            const int size = 32;
+            var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            tex.filterMode = FilterMode.Bilinear;
+            float center = size / 2f;
+            float radius = size / 2f - 1f;
+            for (int y = 0; y < size; y++)
+                for (int x = 0; x < size; x++)
+                {
+                    float dist = Mathf.Sqrt((x - center) * (x - center) + (y - center) * (y - center));
+                    float alpha = Mathf.Clamp01(1f - (dist - radius + 1.5f));
+                    tex.SetPixel(x, y, new Color(1f, 1f, 1f, alpha));
+                }
+            tex.Apply();
+            _cachedCircleSprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), size);
+            return _cachedCircleSprite;
         }
 
         private IEnumerator PhaseBlinkRoutine(Vector2 escapeDir)
