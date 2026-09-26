@@ -8,8 +8,9 @@ namespace EchoOfTheVoid.Core
     /// <summary>Scene flow and pause state shared by the menus and the game (spec 9.2).</summary>
     public static class GameFlow
     {
-        public const string MainMenuScene = "MainMenu";
-        public const string FirstGameplayScene = "Prototype_Level1";
+        public const string MainMenuScene        = "MainMenu";
+        /// <summary>Legacy prototype entry point (kept for Continue saves that stored this name).</summary>
+        public const string FirstGameplayScene   = "Level_01";
 
         private static bool _isPaused;
 
@@ -39,7 +40,7 @@ namespace EchoOfTheVoid.Core
         {
             GameSession.StartNewGame(slot);
             OnGameLoaded?.Invoke(GameSession.Current);
-            Load(FirstGameplayScene);
+            Load(LevelProgression.SceneName(1)); // Always start at Level 01
         }
 
         /// <returns>false if the slot has no valid save.</returns>
@@ -48,8 +49,12 @@ namespace EchoOfTheVoid.Core
             if (!GameSession.TryContinue(slot)) return false;
 
             string scene = GameSession.Current.sceneName;
+            // Migrate legacy save that stored "Prototype_Level1"
+            if (string.IsNullOrEmpty(scene) || scene == "Prototype_Level1")
+                scene = LevelProgression.SceneName(1);
+
             OnGameLoaded?.Invoke(GameSession.Current);
-            Load(string.IsNullOrEmpty(scene) ? FirstGameplayScene : scene);
+            Load(scene);
             return true;
         }
 
@@ -77,3 +82,4 @@ namespace EchoOfTheVoid.Core
         }
     }
 }
+
