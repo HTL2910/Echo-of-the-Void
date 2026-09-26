@@ -117,12 +117,18 @@ namespace EchoOfTheVoid.Feedback
 
             var shape = ps.shape;
             shape.shapeType = ParticleSystemShapeType.Box;
-            shape.scale = new Vector3(28f, 16f, 1f);
+            shape.position = new Vector3(70f, 24f, 0f);
+            shape.scale = new Vector3(220f, 50f, 1f);
 
             var velocity = ps.velocityOverLifetime;
             velocity.enabled = true;
             velocity.x = new ParticleSystem.MinMaxCurve(-0.15f, 0.15f);
             velocity.y = new ParticleSystem.MinMaxCurve(0.1f, 0.35f); // Gently drift upward
+            var zCurve = new ParticleSystem.MinMaxCurve();
+            zCurve.mode = ParticleSystemCurveMode.TwoConstants;
+            zCurve.constantMin = 0f;
+            zCurve.constantMax = 0f;
+            velocity.z = zCurve;
 
             var colorOverLife = ps.colorOverLifetime;
             colorOverLife.enabled = true;
