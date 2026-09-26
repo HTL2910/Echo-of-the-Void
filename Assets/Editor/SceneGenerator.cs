@@ -94,6 +94,7 @@ namespace EchoOfTheVoid.Editor
             // 6. Setup Managers & Audio
             GameObject managersObj = new GameObject("Managers");
             managersObj.AddComponent<RealityManager>();
+            managersObj.AddComponent<RealmVisualEffects>();
             managersObj.AddComponent<HitStopManager>();
             managersObj.AddComponent<CameraShakeManager>();
             managersObj.AddComponent<RoomManager>();
