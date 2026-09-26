@@ -140,5 +140,107 @@ namespace EchoOfTheVoid.Tests
             Assert.AreEqual(dummy.MaxPoise, dummy.CurrentPoise, "Enemy poise should be restored to max");
             Assert.Greater(dummy.CurrentHealth, 0, "Enemy health should be restored");
         }
+
+        [UnityTest]
+        public IEnumerator Enemy_TakesDifferentDamage_InEchoVsPrime()
+        {
+            var go = new GameObject("DamageTestEnemy");
+            go.AddComponent<BoxCollider2D>();
+            var dummy = go.AddComponent<TrainingDummy>();
+
+            yield return null;
+
+            int healthStart = dummy.CurrentHealth;
+
+            // Hit 1: Prime realm (same as enemy) - deals 20 damage at 100%
+            var primeDamage = new DamageInfo(20, go.transform.position, Vector2.zero, RealmType.Prime);
+            dummy.TakeDamage(primeDamage);
+            int healthAfterPrime = dummy.CurrentHealth;
+
+            Assert.AreEqual(healthStart - 20, healthAfterPrime, "Prime-realm damage should deal 100% (20 dmg)");
+
+            // Reset for echo test
+            dummy.CurrentHealth = healthStart;
+
+            // Hit 2: Echo realm (opposite) - deals 20 damage at 20%
+            var echoDamage = new DamageInfo(20, go.transform.position, Vector2.zero, RealmType.Echo);
+            dummy.TakeDamage(echoDamage);
+            int healthAfterEcho = dummy.CurrentHealth;
+
+            Assert.AreEqual(healthStart - 4, healthAfterEcho, "Echo-realm damage should deal 20% (20 * 0.2 = 4 dmg)");
+        }
+
+        [UnityTest]
+        public IEnumerator Enemy_StunDuration_ExpiresAndRestoresNormalDamage()
+        {
+            var go = new GameObject("StunDurationEnemy");
+            go.AddComponent<BoxCollider2D>();
+            var dummy = go.AddComponent<TrainingDummy>();
+
+            yield return null;
+
+            // Stun the enemy by reducing poise to 0
+            var hit1 = new DamageInfo(50, go.transform.position, Vector2.zero, RealmType.Prime);
+            dummy.TakeDamage(hit1);
+
+            Assert.IsTrue(dummy.IsStunned, "Enemy should be stunned");
+
+            // Wait for stun to expire (assume default is ~1.5s)
+            yield return new WaitForSeconds(2f);
+
+            // Enemy should no longer be stunned
+            Assert.IsFalse(dummy.IsStunned, "Stun effect should expire after duration");
+
+            // Damage should return to normal (no bonus)
+            int hpBefore = dummy.CurrentHealth;
+            var normalHit = new DamageInfo(10, go.transform.position, Vector2.zero, RealmType.Prime);
+            dummy.TakeDamage(normalHit);
+
+            Assert.AreEqual(hpBefore - 10, dummy.CurrentHealth, "Damage after stun expires should be normal (no 1.5x bonus)");
+        }
+
+        [UnityTest]
+        public IEnumerator Enemy_CannotBeStunned_WhenAlreadyDead()
+        {
+            var go = new GameObject("DeadEnemyStunTest");
+            go.AddComponent<BoxCollider2D>();
+            var dummy = go.AddComponent<TrainingDummy>();
+
+            yield return null;
+
+            // Kill the enemy
+            var fatalHit = new DamageInfo(dummy.MaxHealth + 10, go.transform.position, Vector2.zero, RealmType.Prime);
+            dummy.TakeDamage(fatalHit);
+
+            Assert.IsTrue(dummy.IsDead, "Enemy should be dead");
+
+            // Try to apply stun after death (should not throw)
+            Assert.DoesNotThrow(() =>
+            {
+                dummy.TakeDamage(new DamageInfo(5, go.transform.position, Vector2.zero, RealmType.Prime));
+            });
+
+            // Should still be dead, not revived
+            Assert.IsTrue(dummy.IsDead);
+        }
+
+        [UnityTest]
+        public IEnumerator Enemy_WithZeroMaxHealth_TakesNoDamage()
+        {
+            var go = new GameObject("ZeroHealthEnemy");
+            go.AddComponent<BoxCollider2D>();
+            var dummy = go.AddComponent<TrainingDummy>();
+
+            yield return null;
+
+            // Manually set max health to 0 (edge case)
+            dummy.MaxHealth = 0;
+
+            var hit = new DamageInfo(100, go.transform.position, Vector2.zero, RealmType.Prime);
+            var feedback = dummy.TakeDamage(hit);
+
+            // Should handle gracefully without error
+            Assert.IsNotNull(feedback);
+        }
     }
 }

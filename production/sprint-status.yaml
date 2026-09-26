@@ -44,17 +44,17 @@ must_have:
     name: "L11: Dialogue & Endings (Iris, Monoliths, 3 ends, credits)"
     file: "Docs/task_claude.md"
     priority: must-have
-    status: backlog
+    status: in-progress
     owner: claude
     estimate_days: 4
-    blocker: "Anti A9 (dialogue text)"
+    blocker: ""
     completed: ""
     acceptance: |
-      - Iris dialogue loads & displays correctly
-      - 12 Monoliths UI opens in-world
-      - 3 ending paths selectable after Chronos
-      - Credits auto-gen from CREDITS.md
-      - Text respects localization (EN/VI)
+      - Iris dialogue loads & displays correctly (✓ DialogueDisplayUI implemented)
+      - 12 Monoliths UI opens in-world (✓ MonolithDisplayUI implemented)
+      - 3 ending paths selectable after Chronos (✓ EndingSelectionUI implemented)
+      - Credits auto-gen from CREDITS.md (✓ CreditsUI implemented)
+      - Text respects localization (EN/VI) (✓ integrated with LocalizationService)
 
   - id: "4A-I3"
     name: "I3: Wire Mechanics (PressurePlate↔Anchor, RailCable, GravitonField)"
