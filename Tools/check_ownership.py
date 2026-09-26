@@ -35,6 +35,7 @@ ALLOWED = {
         "Assets/Scripts/Feedback/", "Assets/Scripts/Settings/", "Assets/Scripts/EchoOfTheVoid.Runtime.asmdef",
         "Assets/Scripts/Environment/",  # trừ Mechanics/ (kiểm bên dưới)
         "Assets/Editor/", "Assets/Tests/", "Assets/Scenes/", "Assets/Prefabs/Levels/", "Assets/Prefabs/Player/",
+        "Assets/Prefabs/Environment/",
         "Assets/Plugins/", "Assets/Settings/", "Assets/DefaultVolumeProfile.asset",
         "ProjectSettings/", "Packages/", "Tools/",
         "Docs/", ".gitignore", ".claude/", "CLAUDE.md", "production/", "design/", "prototypes/",

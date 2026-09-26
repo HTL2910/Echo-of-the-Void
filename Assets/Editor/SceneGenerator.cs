@@ -154,7 +154,7 @@ namespace EchoOfTheVoid.Editor
             GameObject playerObj = new GameObject("Player");
             playerObj.tag = "Player";
             playerObj.layer = playerLayer;
-            playerObj.transform.position = new Vector3(-12f, 0f, 0f);
+            playerObj.transform.position = new Vector3(-25f, 1.5f, 0f);
 
             var rb = playerObj.AddComponent<Rigidbody2D>();
             rb.bodyType = RigidbodyType2D.Dynamic;
@@ -242,49 +242,6 @@ namespace EchoOfTheVoid.Editor
             Color primeColor = new Color(0.0f, 0.85f, 1.0f, 1f);  // Cyan
             Color echoColor = new Color(0.85f, 0.25f, 1.0f, 1f); // Purple
 
-            // Main Arena Floor (Wide: 64 units)
-            CreatePlatform(levelRoot.transform, "Floor_Main", new Vector3(8f, -2.5f, 0f), new Vector3(64f, 1.5f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
-
-            // Boundary Walls
-            CreatePlatform(levelRoot.transform, "Wall_Left_Outer", new Vector3(-24f, 6f, 0f), new Vector3(1.5f, 16f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
-            CreatePlatform(levelRoot.transform, "Wall_Right_Outer", new Vector3(80.5f, 6f, 0f), new Vector3(1.5f, 16f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
-
-            // Wall Jump Shaft (Vertical Chute with open lower entrance)
-            CreatePlatform(levelRoot.transform, "Wall_Shaft_Left", new Vector3(-18f, 4.5f, 0f), new Vector3(1.2f, 11f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
-            // Right wall starts at y=1.5, leaving 3.25m clearance entrance at bottom
-            CreatePlatform(levelRoot.transform, "Wall_Shaft_Right", new Vector3(-15f, 5.75f, 0f), new Vector3(1.2f, 8.5f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
-            // Top Reward Ledge
-            CreatePlatform(levelRoot.transform, "Shaft_Top_Ledge", new Vector3(-20.5f, 9.5f, 0f), new Vector3(4.5f, 0.8f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
-
-            // Platforming Section: Alternating Reality Platforms leading to Exit Rift
-            CreateRealityPlatform(levelRoot.transform, "Platform_Prime_1", new Vector3(-9f, 0f, 0f), new Vector3(4.5f, 0.6f, 1f), RealmType.Prime, primeColor, sprPrimePlat, primeLayer);
-            CreateRealityPlatform(levelRoot.transform, "Platform_Echo_1", new Vector3(-3f, 1.8f, 0f), new Vector3(4.5f, 0.6f, 1f), RealmType.Echo, echoColor, sprEchoPlat, echoLayer);
-            CreateRealityPlatform(levelRoot.transform, "Platform_Prime_2", new Vector3(3f, 3.5f, 0f), new Vector3(4.5f, 0.6f, 1f), RealmType.Prime, primeColor, sprPrimePlat, primeLayer);
-            CreateRealityPlatform(levelRoot.transform, "Platform_Echo_HighLedge", new Vector3(8f, 5.2f, 0f), new Vector3(5.5f, 0.6f, 1f), RealmType.Echo, echoColor, sprEchoPlat, echoLayer);
-            CreateRealityPlatform(levelRoot.transform, "Platform_Prime_Final", new Vector3(14.5f, 6.8f, 0f), new Vector3(4.5f, 0.6f, 1f), RealmType.Prime, primeColor, sprPrimePlat, primeLayer);
-            CreatePlatform(levelRoot.transform, "Goal_Altar", new Vector3(21f, 8.0f, 0f), new Vector3(6.5f, 0.8f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
-            CreateLevelGoal(levelRoot.transform, "Level_Goal_Rift", new Vector3(21f, 9.6f, 0f), sprGoalRift);
-
-            // Room area for the camera (the sandbox is one room; real levels have one RoomBounds per room scene)
-            var roomGo = new GameObject("Room_Prototype");
-            roomGo.transform.SetParent(levelRoot.transform);
-            roomGo.transform.position = new Vector3(28f, 5.5f, 0f);
-            var roomBox = roomGo.AddComponent<BoxCollider2D>();
-            roomBox.isTrigger = true;
-            roomBox.size = new Vector2(104f, 17f); // x -24..80 (sandbox + boss arena), y -3..14
-            roomGo.AddComponent<RoomBounds>().Configure("prototype_room", "Prototype Sandbox");
-
-            // Chrono Stations (checkpoint + save): start, before the combat arena, and the shaft reward ledge
-            CreateStation(levelRoot.transform, "Station_Start", new Vector3(-7.5f, -1.75f, 0f), sprStation, "station_start");
-            CreateStation(levelRoot.transform, "Station_Arena", new Vector3(6.5f, -1.75f, 0f), sprStation, "station_arena");
-            CreateStation(levelRoot.transform, "Station_ShaftTop", new Vector3(-20.5f, 9.9f, 0f), sprStation, "station_shaft_top");
-
-            // Key items (spec 4): Wall Jump is locked until the Piston Boots; Resonance Strike until its core
-            CreatePickup(levelRoot.transform, "Pickup_PistonBoots", new Vector3(-10.5f, -0.9f, 0f), iconWallJump,
-                AbilityFlags.WallJump, "PISTON BOOTS", new Color(1f, 0.85f, 0.2f, 1f));
-            CreatePickup(levelRoot.transform, "Pickup_ResonanceCore", new Vector3(8.5f, -0.9f, 0f), iconResonance,
-                AbilityFlags.ResonanceStrike, "RESONANCE CORE", new Color(0.95f, 0.4f, 0.9f, 1f));
-
             // 9. Combat Arena Section (Entities & Dummies)
             GameObject combatRoot = new GameObject("Combat_Entities");
 
@@ -294,105 +251,31 @@ namespace EchoOfTheVoid.Editor
             var crawlerSO = AssetDatabase.LoadAssetAtPath<EnemyDataSO>($"{ENEMY_DATA_DIR}/EnemyData_ChronoCrawler.asset");
             var weaverSO = AssetDatabase.LoadAssetAtPath<EnemyDataSO>($"{ENEMY_DATA_DIR}/EnemyData_VoidWeaver.asset");
 
-            // Training Dummy Prime (Cyan)
-            CreateDummy(combatRoot.transform, "Dummy_Prime", new Vector3(10f, -1.2f, 0f), RealmType.Prime, boxSprite, enemyLayer, dummyPrimeSO);
-
-            // Training Dummy Echo (Purple)
-            CreateDummy(combatRoot.transform, "Dummy_Echo", new Vector3(14f, -1.2f, 0f), RealmType.Echo, boxSprite, enemyLayer, dummyEchoSO);
-
-            // ChronoCrawler Mob (Prime Crawler)
-            CreateCrawler(combatRoot.transform, "Crawler_Prime", new Vector3(20f, -1.2f, 0f), boxSprite, enemyLayer, crawlerSO);
-
-            // VoidWeaver Mob (Echo Flying Sniper)
-            CreateVoidWeaver(combatRoot.transform, "Weaver_Echo", new Vector3(26f, 3.0f, 0f), boxSprite, enemyLayer, weaverSO);
-
-            // ---------------------------------------------------------------------------------
-            // Integration: Codex's enemies, mechanics and the Sentinel-01 arena
-            // ---------------------------------------------------------------------------------
             Codex.EnemyPrefabBuilder.CreateAllEnemyPrefabs();
             Codex.BossPrefabBuilder.CreateAllBossPrefabs();
             AssetDatabase.Refresh();
 
-            PlacePrefab("Assets/Prefabs/Enemies/VoidStrider.prefab", combatRoot.transform, "Strider_Prime", new Vector3(31f, -0.9f, 0f));
-            PlacePrefab("Assets/Prefabs/Enemies/PrismSentry.prefab", combatRoot.transform, "Sentry_Prime", new Vector3(35f, 7f, 0f));
-
             int hazardLayer = GetOrCreateLayer("Hazard", 11);
-            var mechanicsRoot = new GameObject("Mechanics").transform;
-            mechanicsRoot.SetParent(levelRoot.transform);
-            // Placed in the level
-            BuildMechanic<Spikes>(mechanicsRoot, "Spikes", new Vector3(23.5f, -1.45f, 0f), new Vector2(3f, 0.6f), new Color(1f, 0.3f, 0.2f, 1f), boxSprite, hazardLayer, true, true);
-            BuildMechanic<BouncePad>(mechanicsRoot, "BouncePad", new Vector3(27.5f, -1.5f, 0f), new Vector2(1.6f, 0.5f), new Color(0.4f, 1f, 0.6f, 1f), boxSprite, neutralLayer, false, true);
-            BuildMechanic<EnergyGate>(mechanicsRoot, "EnergyGate", new Vector3(33f, 0.3f, 0f), new Vector2(0.5f, 4.1f), new Color(0.3f, 0.8f, 1f, 0.7f), boxSprite, hazardLayer, true, true);
-            // Prefab only (for the level builders): plate, door, lever
-            BuildMechanic<PressurePlate>(mechanicsRoot, "PressurePlate", Vector3.zero, new Vector2(1.5f, 0.2f), new Color(1f, 0.85f, 0.2f, 1f), boxSprite, neutralLayer, true, false);
-            BuildMechanic<Door>(mechanicsRoot, "Door", Vector3.zero, new Vector2(0.8f, 4f), new Color(0.5f, 0.55f, 0.65f, 1f), boxSprite, neutralLayer, false, false);
-            BuildMechanic<Lever>(mechanicsRoot, "Lever", Vector3.zero, new Vector2(0.8f, 1f), new Color(0.9f, 0.9f, 0.4f, 1f), boxSprite, GetOrCreateLayer("Interactable", 12), true, false);
+            int interactableLayer = GetOrCreateLayer("Interactable", 12);
 
+            // Prefab templates for mechanics (doors, plates, levers)
+            var mechTemplates = new GameObject("Mechanic_Templates").transform;
+            mechTemplates.SetParent(levelRoot.transform, false);
+            BuildMechanic<PressurePlate>(mechTemplates, "PressurePlate", Vector3.zero, new Vector2(1.5f, 0.2f), new Color(1f, 0.85f, 0.2f, 1f), boxSprite, neutralLayer, true, false);
+            BuildMechanic<Door>(mechTemplates, "Door", Vector3.zero, new Vector2(0.8f, 4f), new Color(0.5f, 0.55f, 0.65f, 1f), boxSprite, neutralLayer, false, false);
+            BuildMechanic<Lever>(mechTemplates, "Lever", Vector3.zero, new Vector2(0.8f, 1f), new Color(0.9f, 0.9f, 0.4f, 1f), boxSprite, interactableLayer, true, false);
+            Object.DestroyImmediate(mechTemplates.gameObject);
 
-            // Gravity Inversion demo: a ceiling above a Graviton Field (needs the Graviton Core from the boss)
-            CreatePlatform(levelRoot.transform, "Ceiling_Demo", new Vector3(29f, 9f, 0f), new Vector3(7f, 1f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
-            var fieldGo = new GameObject("GravitonField_Demo");
-            fieldGo.transform.position = new Vector3(29f, 3.5f, 0f);
-            var fieldBox = fieldGo.AddComponent<BoxCollider2D>();
-            fieldBox.isTrigger = true;
-            fieldBox.size = new Vector2(6f, 10f);
-            var fieldVisual = AddVisual(fieldGo, boxSprite, new Vector2(6f, 10f), new Color(0.6f, 0.25f, 1f, 0.18f));
-            fieldVisual.sortingOrder = -2;
-            fieldGo.AddComponent<GravitonField>();
-            var fieldInstance = SaveOrReusePrefab(fieldGo, "Mech_GravitonField", "Mechanics");
-            fieldInstance.transform.SetParent(mechanicsRoot, true);
-            fieldInstance.transform.position = new Vector3(29f, 3.5f, 0f);
-            fieldInstance.name = "GravitonField_Demo";
-
-            // Echo Anchor pickup near the start (the ability is normally a boss reward)
-            CreatePickup(levelRoot.transform, "Pickup_EchoAnchor", new Vector3(-5f, -0.9f, 0f), boxSprite,
-                AbilityFlags.EchoAnchor, "ECHO ANCHOR", new Color(0.4f, 0.7f, 1f, 1f));
-
-            // Boss arena (x 40..80): a station before the gate, the fight, then a reward and a station after
-            CreatePlatform(levelRoot.transform, "Floor_Arena", new Vector3(60f, -2.5f, 0f), new Vector3(40f, 1.5f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
-            CreateStation(levelRoot.transform, "Station_BossGate", new Vector3(38f, -1.75f, 0f), boxSprite, "station_boss");
-
-            var gate = new GameObject("Arena_Gate");
-            gate.transform.SetParent(levelRoot.transform);
-            gate.transform.position = new Vector3(42f, 4f, 0f);
-            gate.layer = neutralLayer;
-            gate.AddComponent<BoxCollider2D>().size = new Vector2(1f, 12f);
-            AddVisual(gate, boxSprite, new Vector2(1f, 12f), new Color(0.85f, 0.25f, 1f, 0.9f));
-            gate.SetActive(false); // the arena locks it when the fight starts
-
-            var bossGo = PlacePrefab("Assets/Prefabs/Bosses/Sentinel01.prefab", combatRoot.transform, "Sentinel01", new Vector3(68f, -0.25f, 0f));
-            var arenaGo = new GameObject("BossArena_Sentinel01");
-            arenaGo.transform.SetParent(levelRoot.transform);
-            arenaGo.transform.position = new Vector3(61f, 3f, 0f);
-            var arenaBox = arenaGo.AddComponent<BoxCollider2D>();
-            arenaBox.isTrigger = true;
-            arenaBox.size = new Vector2(34f, 14f); // x 44..78
-
-            if (bossGo != null)
-            {
-                var sentinel = bossGo.GetComponent<Sentinel01>();
-                SetPrivate(sentinel, "missileWarningPrefab", EnsureMissileWarningPrefab(boxSprite));
-                SetPrivate(sentinel, "missileSpawnPoint", bossGo.transform.Find("MissileSpawn"));
-                SetPrivate(sentinel, "laserOrigin", bossGo.transform.Find("LaserOrigin"));
-
-                var rewardPoint = new GameObject("RewardPoint").transform;
-                rewardPoint.SetParent(arenaGo.transform, false);
-                rewardPoint.position = new Vector3(60f, -0.9f, 0f);
-                var stationPoint = new GameObject("StationPoint").transform;
-                stationPoint.SetParent(arenaGo.transform, false);
-                stationPoint.position = new Vector3(47f, -1.75f, 0f);
-
-                var arena = arenaGo.AddComponent<BossArena>();
-                arena.Configure(sentinel, gate,
-                    EnsurePickupPrefab(boxSprite, AbilityFlags.GravityInversion, "GRAVITON CORE (test reward)", new Color(0.4f, 1f, 0.7f, 1f)),
-                    rewardPoint,
-                    AssetDatabase.LoadAssetAtPath<GameObject>($"{PREFAB_DIR}/Environment/Station_Chrono_station_boss.prefab"),
-                    stationPoint);
-            }
-            else
-            {
-                Debug.LogWarning("[SceneGenerator] Sentinel01 prefab missing: the boss arena has no boss");
-            }
+            // Build Zone 1 Continuous Metroidvania Layout: Rooms 1 to 10 + Boss Arena
+            CreateZone1Rooms1To10(
+                levelRoot.transform,
+                combatRoot.transform,
+                sprNeutralPlat, sprPrimePlat, sprEchoPlat, sprStation, sprGoalRift,
+                iconWallJump, iconResonance, boxSprite,
+                neutralColor, primeColor, echoColor,
+                neutralLayer, primeLayer, echoLayer, enemyLayer, hazardLayer, interactableLayer,
+                dummyPrimeSO, dummyEchoSO, crawlerSO, weaverSO
+            );
 
             // 10. Setup Player HUD (Canvas UI)
             CreateHUD();
@@ -553,7 +436,8 @@ namespace EchoOfTheVoid.Editor
 
             var dummy = obj.AddComponent<TrainingDummy>();
             SetEnemyDataField(dummy, data, realm);
-            SaveOrReusePrefab(obj, "Enemy_" + name, "Enemies");
+            obj.AddComponent<EnemyRespawner>();
+            SaveOrReusePrefab(obj, "Enemy_" + name, "Enemies", typeof(EnemyRespawner));
         }
 
         private static void CreateCrawler(Transform parent, string name, Vector3 pos, Sprite sprite, int layer, EnemyDataSO data)
@@ -573,7 +457,8 @@ namespace EchoOfTheVoid.Editor
 
             var crawler = obj.AddComponent<ChronoCrawler>();
             SetEnemyDataField(crawler, data, RealmType.Prime);
-            SaveOrReusePrefab(obj, "Enemy_" + name, "Enemies");
+            obj.AddComponent<EnemyRespawner>();
+            SaveOrReusePrefab(obj, "Enemy_" + name, "Enemies", typeof(EnemyRespawner));
         }
 
         private static void CreateVoidWeaver(Transform parent, string name, Vector3 pos, Sprite sprite, int layer, EnemyDataSO data)
@@ -594,7 +479,8 @@ namespace EchoOfTheVoid.Editor
 
             var weaver = obj.AddComponent<VoidWeaver>();
             SetEnemyDataField(weaver, data, RealmType.Echo);
-            SaveOrReusePrefab(obj, "Enemy_" + name, "Enemies");
+            obj.AddComponent<EnemyRespawner>();
+            SaveOrReusePrefab(obj, "Enemy_" + name, "Enemies", typeof(EnemyRespawner));
         }
 
         /// <summary>
@@ -1309,21 +1195,21 @@ namespace EchoOfTheVoid.Editor
             // Layer 0: Deep Void starry nebula backdrop (immense distance)
             var deepSky = new GameObject("Layer_0_DeepVoid");
             deepSky.transform.SetParent(bgRoot.transform, false);
-            deepSky.transform.position = new Vector3(28f, 6f, 0f);
+            deepSky.transform.position = new Vector3(70f, 22f, 0f);
             var deepSr = deepSky.AddComponent<SpriteRenderer>();
             deepSr.sprite = boxSprite;
             deepSr.color = new Color(0.04f, 0.06f, 0.12f, 1f); // Deep Cosmic Navy Void
-            deepSky.transform.localScale = new Vector3(160f, 40f, 1f);
+            deepSky.transform.localScale = new Vector3(250f, 65f, 1f);
             deepSr.sortingOrder = -30;
 
             // Layer 0.5: Ethereal Chrono Nebula glow band
             var nebula = new GameObject("Layer_0_NebulaBand");
             nebula.transform.SetParent(bgRoot.transform, false);
-            nebula.transform.position = new Vector3(28f, 10f, 0f);
+            nebula.transform.position = new Vector3(70f, 26f, 0f);
             var nebSr = nebula.AddComponent<SpriteRenderer>();
             nebSr.sprite = boxSprite;
             nebSr.color = new Color(0.07f, 0.16f, 0.28f, 0.75f); // Luminous cyan/teal nebula band
-            nebula.transform.localScale = new Vector3(160f, 18f, 1f);
+            nebula.transform.localScale = new Vector3(250f, 30f, 1f);
             nebSr.sortingOrder = -25;
 
             // Layer 1: Distant Ancient Megastructure Silhouettes (towers, clockwork pillars)
@@ -1331,13 +1217,13 @@ namespace EchoOfTheVoid.Editor
             distantPillars.transform.SetParent(bgRoot.transform, false);
             distantPillars.transform.position = new Vector3(0f, 0f, 0f);
             Color silhouetteColor = new Color(0.06f, 0.09f, 0.16f, 0.85f);
-            for (int i = -2; i <= 6; i++)
+            for (int i = -3; i <= 10; i++)
             {
-                float x = i * 18f + 5f;
+                float x = i * 18f;
                 var colObj = new GameObject($"DistantPillar_{i}");
                 colObj.transform.SetParent(distantPillars.transform, false);
-                colObj.transform.position = new Vector3(x, 8f, 0f);
-                colObj.transform.localScale = new Vector3(6f, 32f, 1f);
+                colObj.transform.position = new Vector3(x, 22f, 0f);
+                colObj.transform.localScale = new Vector3(6f, 50f, 1f);
                 var sr = colObj.AddComponent<SpriteRenderer>();
                 sr.sprite = boxSprite;
                 sr.color = silhouetteColor;
@@ -1349,13 +1235,13 @@ namespace EchoOfTheVoid.Editor
             midgroundBeams.transform.SetParent(bgRoot.transform, false);
             midgroundBeams.transform.position = new Vector3(0f, 0f, 0f);
             Color beamColor = new Color(0.09f, 0.13f, 0.22f, 0.75f);
-            for (int i = -1; i <= 5; i++)
+            for (int i = -2; i <= 9; i++)
             {
                 float x = i * 22f - 6f;
                 var beamObj = new GameObject($"GothicBeam_{i}");
                 beamObj.transform.SetParent(midgroundBeams.transform, false);
-                beamObj.transform.position = new Vector3(x, 5f, 0f);
-                beamObj.transform.localScale = new Vector3(2.5f, 22f, 1f);
+                beamObj.transform.position = new Vector3(x, 20f, 0f);
+                beamObj.transform.localScale = new Vector3(2.5f, 40f, 1f);
                 var sr = beamObj.AddComponent<SpriteRenderer>();
                 sr.sprite = boxSprite;
                 sr.color = beamColor;
@@ -1364,6 +1250,271 @@ namespace EchoOfTheVoid.Editor
 
             // Layer 3: Floating Ambient Dust Motes (glowing specks catching URP light)
             ParallaxBackground.CreateAmbientDustParticles(bgRoot.transform, new Color(0.35f, 0.85f, 1f, 0.7f));
+        }
+
+        private static RoomBounds CreateRoomBounds(Transform parent, string roomId, string displayName, Vector3 center, Vector2 size)
+        {
+            var boundsObj = new GameObject("RoomBounds");
+            boundsObj.transform.SetParent(parent, false);
+            boundsObj.transform.position = center;
+            var box = boundsObj.AddComponent<BoxCollider2D>();
+            box.isTrigger = true;
+            box.size = size;
+            var roomBounds = boundsObj.AddComponent<RoomBounds>();
+            roomBounds.Configure(roomId, displayName);
+            return roomBounds;
+        }
+
+        private static void CreateZone1Rooms1To10(
+            Transform levelRoot,
+            Transform combatRoot,
+            Sprite sprNeutralPlat, Sprite sprPrimePlat, Sprite sprEchoPlat, Sprite sprStation, Sprite sprGoalRift,
+            Sprite iconWallJump, Sprite iconResonance, Sprite boxSprite,
+            Color neutralColor, Color primeColor, Color echoColor,
+            int neutralLayer, int primeLayer, int echoLayer, int enemyLayer, int hazardLayer, int interactableLayer,
+            EnemyDataSO dummyPrimeSO, EnemyDataSO dummyEchoSO, EnemyDataSO crawlerSO, EnemyDataSO weaverSO)
+        {
+            // -------------------------------------------------------------
+            // [Row 1] Z1_R01: Foundry Entrance (20x14 m, X: -30..-10, Y: 0..14)
+            // -------------------------------------------------------------
+            var r01Obj = new GameObject("Z1_R01_FoundryEntrance");
+            r01Obj.transform.SetParent(levelRoot, false);
+            CreateRoomBounds(r01Obj.transform, "Z1_R01", "Foundry Entrance", new Vector3(-20f, 7f, 0f), new Vector2(20f, 14f));
+            var geom01 = new GameObject("Geometry").transform; geom01.SetParent(r01Obj.transform, false);
+            var enemy01 = new GameObject("Enemies").transform; enemy01.SetParent(r01Obj.transform, false);
+
+            CreatePlatform(geom01, "Floor_R01", new Vector3(-20f, -0.5f, 0f), new Vector3(20f, 1f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
+            CreatePlatform(geom01, "Ceiling_R01", new Vector3(-20f, 14.5f, 0f), new Vector3(20f, 1f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
+            CreatePlatform(geom01, "Wall_West_R01", new Vector3(-30.5f, 7f, 0f), new Vector3(1f, 14f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
+            CreatePlatform(geom01, "Wall_East_Upper_R01", new Vector3(-9.5f, 9f, 0f), new Vector3(1f, 10f, 1f), neutralColor, sprNeutralPlat, neutralLayer); // doorway Y: 0..4
+
+            CreatePlatform(geom01, "Plat_Tutorial_1", new Vector3(-20f, 2.5f, 0f), new Vector3(3f, 0.6f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
+            CreatePlatform(geom01, "Plat_Tutorial_2", new Vector3(-15f, 4.5f, 0f), new Vector3(3f, 0.6f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
+            CreateDummy(enemy01, "Dummy_Prime", new Vector3(-13f, 1.0f, 0f), RealmType.Prime, boxSprite, enemyLayer, dummyPrimeSO);
+
+            // -------------------------------------------------------------
+            // [Row 1] Z1_R02: Outer Bastion (24x14 m, X: -10..14, Y: 0..14)
+            // -------------------------------------------------------------
+            var r02Obj = new GameObject("Z1_R02_OuterBastion");
+            r02Obj.transform.SetParent(levelRoot, false);
+            CreateRoomBounds(r02Obj.transform, "Z1_R02", "Outer Bastion", new Vector3(2f, 7f, 0f), new Vector2(24f, 14f));
+            var geom02 = new GameObject("Geometry").transform; geom02.SetParent(r02Obj.transform, false);
+            var interact02 = new GameObject("Interactive").transform; interact02.SetParent(r02Obj.transform, false);
+
+            CreatePlatform(geom02, "Floor_R02", new Vector3(2f, -0.5f, 0f), new Vector3(24f, 1f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
+            CreatePlatform(geom02, "Ceiling_R02", new Vector3(6f, 14.5f, 0f), new Vector3(16f, 1f, 1f), neutralColor, sprNeutralPlat, neutralLayer); // opening X: -10..-2 up to R05
+            CreatePlatform(geom02, "Wall_East_Upper_R02", new Vector3(14.5f, 9f, 0f), new Vector3(1f, 10f, 1f), neutralColor, sprNeutralPlat, neutralLayer); // doorway Y: 0..4
+
+            CreateStation(interact02, "Station_Start", new Vector3(-6f, 0f, 0f), sprStation, "station_start");
+            CreatePlatform(geom02, "Wall_Barrier_R02", new Vector3(0f, 3.5f, 0f), new Vector3(1f, 7f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
+            CreateRealityPlatform(geom02, "Plat_Prime_R02", new Vector3(-3.5f, 2.8f, 0f), new Vector3(3.5f, 0.6f, 1f), RealmType.Prime, primeColor, sprPrimePlat, primeLayer);
+            CreateRealityPlatform(geom02, "Plat_Echo_R02", new Vector3(3.5f, 5.2f, 0f), new Vector3(3.5f, 0.6f, 1f), RealmType.Echo, echoColor, sprEchoPlat, echoLayer);
+            CreatePlatform(geom02, "Ledge_Upper_R02", new Vector3(8.5f, 7.5f, 0f), new Vector3(5f, 0.6f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
+
+            // -------------------------------------------------------------
+            // [Row 1] Z1_R03: Broken Conduits (30x14 m, X: 14..44, Y: 0..14)
+            // -------------------------------------------------------------
+            var r03Obj = new GameObject("Z1_R03_BrokenConduits");
+            r03Obj.transform.SetParent(levelRoot, false);
+            CreateRoomBounds(r03Obj.transform, "Z1_R03", "Broken Conduits", new Vector3(29f, 7f, 0f), new Vector2(30f, 14f));
+            var geom03 = new GameObject("Geometry").transform; geom03.SetParent(r03Obj.transform, false);
+            var interact03 = new GameObject("Interactive").transform; interact03.SetParent(r03Obj.transform, false);
+            var enemy03 = new GameObject("Enemies").transform; enemy03.SetParent(r03Obj.transform, false);
+
+            CreatePlatform(geom03, "Floor_R03", new Vector3(29f, -0.5f, 0f), new Vector3(30f, 1f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
+            CreatePlatform(geom03, "Ceiling_R03", new Vector3(29f, 14.5f, 0f), new Vector3(30f, 1f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
+            CreatePlatform(geom03, "Wall_East_Upper_R03", new Vector3(44.5f, 9f, 0f), new Vector3(1f, 10f, 1f), neutralColor, sprNeutralPlat, neutralLayer); // doorway Y: 0..4
+
+            // Wall Jump Shaft
+            CreatePlatform(geom03, "Wall_Shaft_Left_R03", new Vector3(31.5f, 8.25f, 0f), new Vector3(1f, 10.5f, 1f), neutralColor, sprNeutralPlat, neutralLayer); // opening below Y=3
+            CreatePlatform(geom03, "Wall_Shaft_Right_R03", new Vector3(35f, 7f, 0f), new Vector3(1f, 14f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
+            CreatePlatform(geom03, "Plat_ShaftTop_R03", new Vector3(33.25f, 10.5f, 0f), new Vector3(3.5f, 0.6f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
+            CreatePickup(interact03, "Pickup_PistonBoots", new Vector3(33.25f, 11.4f, 0f), iconWallJump, AbilityFlags.WallJump, "PISTON BOOTS", new Color(1f, 0.85f, 0.2f, 1f));
+
+            CreateCrawler(enemy03, "Crawler_Prime_R03", new Vector3(22f, 0.6f, 0f), boxSprite, enemyLayer, crawlerSO);
+
+            // -------------------------------------------------------------
+            // [Row 1] Z1_R04: Steam Vent Shaft (16x14 m, X: 44..60, Y: 0..14)
+            // -------------------------------------------------------------
+            var r04Obj = new GameObject("Z1_R04_SteamVentShaft");
+            r04Obj.transform.SetParent(levelRoot, false);
+            CreateRoomBounds(r04Obj.transform, "Z1_R04", "Steam Vent Shaft", new Vector3(52f, 7f, 0f), new Vector2(16f, 14f));
+            var geom04 = new GameObject("Geometry").transform; geom04.SetParent(r04Obj.transform, false);
+
+            CreatePlatform(geom04, "Floor_R04", new Vector3(52f, -0.5f, 0f), new Vector3(16f, 1f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
+            CreatePlatform(geom04, "Wall_East_Outer_R04", new Vector3(60.5f, 7f, 0f), new Vector3(1f, 14f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
+            CreatePlatform(geom04, "Ceiling_R04_East", new Vector3(57f, 14.5f, 0f), new Vector3(6f, 1f, 1f), neutralColor, sprNeutralPlat, neutralLayer); // opening X: 48..54 up to R07
+
+            CreatePlatform(geom04, "Plat_R04_1", new Vector3(48f, 3.5f, 0f), new Vector3(3.5f, 0.6f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
+            CreateRealityPlatform(geom04, "Plat_R04_2", new Vector3(55f, 6.5f, 0f), new Vector3(3.5f, 0.6f, 1f), RealmType.Prime, primeColor, sprPrimePlat, primeLayer);
+            CreateRealityPlatform(geom04, "Plat_R04_3", new Vector3(48f, 9.5f, 0f), new Vector3(3.5f, 0.6f, 1f), RealmType.Echo, echoColor, sprEchoPlat, echoLayer);
+            CreateRealityPlatform(geom04, "Plat_R04_4", new Vector3(55f, 12.5f, 0f), new Vector3(3.5f, 0.6f, 1f), RealmType.Prime, primeColor, sprPrimePlat, primeLayer);
+
+            // -------------------------------------------------------------
+            // [Row 2] Z1_R05: Cooling Core West (26x14 m, X: -10..16, Y: 14..28)
+            // -------------------------------------------------------------
+            var r05Obj = new GameObject("Z1_R05_CoolingCoreWest");
+            r05Obj.transform.SetParent(levelRoot, false);
+            CreateRoomBounds(r05Obj.transform, "Z1_R05", "Cooling Core West", new Vector3(3f, 21f, 0f), new Vector2(26f, 14f));
+            var geom05 = new GameObject("Geometry").transform; geom05.SetParent(r05Obj.transform, false);
+            var mech05 = new GameObject("Mechanics").transform; mech05.SetParent(r05Obj.transform, false);
+            var enemy05 = new GameObject("Enemies").transform; enemy05.SetParent(r05Obj.transform, false);
+
+            CreatePlatform(geom05, "Floor_R05", new Vector3(8f, 13.5f, 0f), new Vector3(16f, 1f, 1f), neutralColor, sprNeutralPlat, neutralLayer); // opening X: -10..0 down to R02
+            CreatePlatform(geom05, "Wall_West_Outer_R05", new Vector3(-10.5f, 21f, 0f), new Vector3(1f, 14f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
+            CreatePlatform(geom05, "Ceiling_R05", new Vector3(3f, 28.5f, 0f), new Vector3(26f, 1f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
+            CreatePlatform(geom05, "Wall_East_Upper_R05", new Vector3(16.5f, 23f, 0f), new Vector3(1f, 10f, 1f), neutralColor, sprNeutralPlat, neutralLayer); // doorway Y: 14..18
+
+            CreatePlatform(geom05, "Ledge_Climb_R05", new Vector3(-5f, 16.5f, 0f), new Vector3(4f, 0.6f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
+            BuildMechanic<EnergyGate>(mech05, "EnergyGate_R05", new Vector3(12f, 16f, 0f), new Vector2(0.5f, 4f), new Color(0.3f, 0.8f, 1f, 0.7f), boxSprite, hazardLayer, true, true);
+            CreateVoidWeaver(enemy05, "Weaver_Echo_R05", new Vector3(6f, 22f, 0f), boxSprite, enemyLayer, weaverSO);
+
+            // -------------------------------------------------------------
+            // [Row 2] Z1_R06: Piston Gallery (32x14 m, X: 16..48, Y: 14..28)
+            // -------------------------------------------------------------
+            var r06Obj = new GameObject("Z1_R06_PistonGallery");
+            r06Obj.transform.SetParent(levelRoot, false);
+            CreateRoomBounds(r06Obj.transform, "Z1_R06", "Piston Gallery", new Vector3(32f, 21f, 0f), new Vector2(32f, 14f));
+            var geom06 = new GameObject("Geometry").transform; geom06.SetParent(r06Obj.transform, false);
+            var mech06 = new GameObject("Mechanics").transform; mech06.SetParent(r06Obj.transform, false);
+            var interact06 = new GameObject("Interactive").transform; interact06.SetParent(r06Obj.transform, false);
+
+            CreatePlatform(geom06, "Floor_West_R06", new Vector3(18f, 13.5f, 0f), new Vector3(4f, 1f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
+            CreatePlatform(geom06, "Floor_East_R06", new Vector3(46f, 13.5f, 0f), new Vector3(4f, 1f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
+            CreatePlatform(geom06, "Ceiling_R06", new Vector3(32f, 28.5f, 0f), new Vector3(32f, 1f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
+            CreatePlatform(geom06, "Wall_East_Upper_R06", new Vector3(48.5f, 23f, 0f), new Vector3(1f, 10f, 1f), neutralColor, sprNeutralPlat, neutralLayer); // doorway Y: 14..18
+
+            BuildMechanic<Spikes>(mech06, "Spikes_R06", new Vector3(32f, 13.8f, 0f), new Vector2(24f, 0.6f), new Color(1f, 0.3f, 0.2f, 1f), boxSprite, hazardLayer, true, true);
+            CreateRealityPlatform(geom06, "Plat_Prime_R06_1", new Vector3(24f, 16.5f, 0f), new Vector3(3.5f, 0.6f, 1f), RealmType.Prime, primeColor, sprPrimePlat, primeLayer);
+            CreateRealityPlatform(geom06, "Plat_Echo_R06_2", new Vector3(32f, 18.0f, 0f), new Vector3(4.5f, 0.6f, 1f), RealmType.Echo, echoColor, sprEchoPlat, echoLayer);
+            CreateRealityPlatform(geom06, "Plat_Prime_R06_3", new Vector3(40f, 16.5f, 0f), new Vector3(3.5f, 0.6f, 1f), RealmType.Prime, primeColor, sprPrimePlat, primeLayer);
+
+            CreatePickup(interact06, "Pickup_EchoAnchor", new Vector3(32f, 19.2f, 0f), boxSprite, AbilityFlags.EchoAnchor, "ECHO ANCHOR", new Color(0.4f, 0.7f, 1f, 1f));
+
+            // -------------------------------------------------------------
+            // [Row 2] Z1_R07: Upper Conduit Cross (20x14 m, X: 48..68, Y: 14..28)
+            // -------------------------------------------------------------
+            var r07Obj = new GameObject("Z1_R07_UpperConduitCross");
+            r07Obj.transform.SetParent(levelRoot, false);
+            CreateRoomBounds(r07Obj.transform, "Z1_R07", "Upper Conduit Cross", new Vector3(58f, 21f, 0f), new Vector2(20f, 14f));
+            var geom07 = new GameObject("Geometry").transform; geom07.SetParent(r07Obj.transform, false);
+            var enemy07 = new GameObject("Enemies").transform; enemy07.SetParent(r07Obj.transform, false);
+
+            CreatePlatform(geom07, "Floor_East_R07", new Vector3(61f, 13.5f, 0f), new Vector3(14f, 1f, 1f), neutralColor, sprNeutralPlat, neutralLayer); // opening X: 48..54 down to R04
+            CreatePlatform(geom07, "Ceiling_West_R07", new Vector3(52f, 28.5f, 0f), new Vector3(8f, 1f, 1f), neutralColor, sprNeutralPlat, neutralLayer); // opening X: 56..68 up to R08
+            CreatePlatform(geom07, "Wall_East_Outer_R07", new Vector3(68.5f, 21f, 0f), new Vector3(1f, 14f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
+
+            CreatePlatform(geom07, "Plat_Central_R07", new Vector3(58f, 18.5f, 0f), new Vector3(6f, 0.8f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
+            CreateRealityPlatform(geom07, "Plat_Upper_R07", new Vector3(62f, 23.5f, 0f), new Vector3(5f, 0.6f, 1f), RealmType.Prime, primeColor, sprPrimePlat, primeLayer);
+            CreateCrawler(enemy07, "Crawler_Prime_R07", new Vector3(58f, 19.3f, 0f), boxSprite, enemyLayer, crawlerSO);
+
+            // -------------------------------------------------------------
+            // [Row 3] Z1_R08: Smelting Chamber (36x16 m, X: 48..84, Y: 28..44)
+            // -------------------------------------------------------------
+            var r08Obj = new GameObject("Z1_R08_SmeltingChamber");
+            r08Obj.transform.SetParent(levelRoot, false);
+            CreateRoomBounds(r08Obj.transform, "Z1_R08", "Smelting Chamber", new Vector3(66f, 36f, 0f), new Vector2(36f, 16f));
+            var geom08 = new GameObject("Geometry").transform; geom08.SetParent(r08Obj.transform, false);
+            var mech08 = new GameObject("Mechanics").transform; mech08.SetParent(r08Obj.transform, false);
+
+            CreatePlatform(geom08, "Floor_West_R08", new Vector3(52f, 27.5f, 0f), new Vector3(8f, 1f, 1f), neutralColor, sprNeutralPlat, neutralLayer); // opening X: 56..64 down from R07
+            CreatePlatform(geom08, "Floor_East_R08", new Vector3(81f, 29.5f, 0f), new Vector3(6f, 1f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
+            CreatePlatform(geom08, "Wall_West_Outer_R08", new Vector3(47.5f, 36f, 0f), new Vector3(1f, 16f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
+            CreatePlatform(geom08, "Ceiling_R08", new Vector3(66f, 44.5f, 0f), new Vector3(36f, 1f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
+            CreatePlatform(geom08, "Wall_East_Upper_R08", new Vector3(84.5f, 39f, 0f), new Vector3(1f, 10f, 1f), neutralColor, sprNeutralPlat, neutralLayer); // doorway Y: 30..34
+            CreatePlatform(geom08, "Wall_East_Lower_R08", new Vector3(84.5f, 29f, 0f), new Vector3(1f, 2f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
+
+            BuildMechanic<BouncePad>(mech08, "BouncePad_R08", new Vector3(60f, 28.2f, 0f), new Vector2(2f, 0.5f), new Color(0.4f, 1f, 0.6f, 1f), boxSprite, neutralLayer, false, true);
+            BuildMechanic<Spikes>(mech08, "Spikes_R08", new Vector3(71f, 27.3f, 0f), new Vector2(14f, 0.6f), new Color(1f, 0.3f, 0.2f, 1f), boxSprite, hazardLayer, true, true);
+            CreateRealityPlatform(geom08, "Plat_High_Echo_R08", new Vector3(70f, 36.5f, 0f), new Vector3(5f, 0.6f, 1f), RealmType.Echo, echoColor, sprEchoPlat, echoLayer);
+
+            // -------------------------------------------------------------
+            // [Row 3] Z1_R09: Resonance Archive (24x16 m, X: 84..108, Y: 28..44)
+            // -------------------------------------------------------------
+            var r09Obj = new GameObject("Z1_R09_ResonanceArchive");
+            r09Obj.transform.SetParent(levelRoot, false);
+            CreateRoomBounds(r09Obj.transform, "Z1_R09", "Resonance Archive", new Vector3(96f, 36f, 0f), new Vector2(24f, 16f));
+            var geom09 = new GameObject("Geometry").transform; geom09.SetParent(r09Obj.transform, false);
+            var interact09 = new GameObject("Interactive").transform; interact09.SetParent(r09Obj.transform, false);
+            var enemy09 = new GameObject("Enemies").transform; enemy09.SetParent(r09Obj.transform, false);
+
+            CreatePlatform(geom09, "Floor_R09", new Vector3(96f, 27.5f, 0f), new Vector3(24f, 1f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
+            CreatePlatform(geom09, "Ceiling_R09", new Vector3(96f, 44.5f, 0f), new Vector3(24f, 1f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
+            CreatePlatform(geom09, "Wall_East_Upper_R09", new Vector3(108.5f, 38f, 0f), new Vector3(1f, 12f, 1f), neutralColor, sprNeutralPlat, neutralLayer); // doorway Y: 28..32
+
+            CreateStation(interact09, "Station_Archive", new Vector3(91f, 28f, 0f), sprStation, "station_archive");
+            CreatePickup(interact09, "Pickup_ResonanceCore", new Vector3(100f, 29.5f, 0f), iconResonance, AbilityFlags.ResonanceStrike, "RESONANCE CORE", new Color(0.95f, 0.4f, 0.9f, 1f));
+            PlacePrefab("Assets/Prefabs/Enemies/VoidStrider.prefab", enemy09, "Strider_R09", new Vector3(96f, 28.5f, 0f));
+
+            // -------------------------------------------------------------
+            // [Row 3] Z1_R10: Central Maintenance (24x16 m, X: 108..132, Y: 28..44)
+            // -------------------------------------------------------------
+            var r10Obj = new GameObject("Z1_R10_CentralMaintenance");
+            r10Obj.transform.SetParent(levelRoot, false);
+            CreateRoomBounds(r10Obj.transform, "Z1_R10", "Central Maintenance", new Vector3(120f, 36f, 0f), new Vector2(24f, 16f));
+            var geom10 = new GameObject("Geometry").transform; geom10.SetParent(r10Obj.transform, false);
+            var interact10 = new GameObject("Interactive").transform; interact10.SetParent(r10Obj.transform, false);
+
+            CreatePlatform(geom10, "Floor_R10", new Vector3(120f, 27.5f, 0f), new Vector3(24f, 1f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
+            CreatePlatform(geom10, "Ceiling_R10", new Vector3(120f, 44.5f, 0f), new Vector3(24f, 1f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
+            CreatePlatform(geom10, "Wall_East_Upper_R10", new Vector3(132.5f, 39f, 0f), new Vector3(1f, 10f, 1f), neutralColor, sprNeutralPlat, neutralLayer); // doorway Y: 28..34 into Boss Arena
+
+            CreateStation(interact10, "Station_Maintenance", new Vector3(114f, 28f, 0f), sprStation, "station_maintenance");
+            CreatePlatform(geom10, "Goal_Altar_R10", new Vector3(124f, 29.5f, 0f), new Vector3(5f, 0.8f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
+            CreateLevelGoal(interact10, "Level_Goal_Rift", new Vector3(124f, 31.0f, 0f), sprGoalRift);
+
+            // -------------------------------------------------------------
+            // [Boss Arena] Z1_R18: Sentinel Foundry (44x16 m, X: 132..176, Y: 28..44)
+            // -------------------------------------------------------------
+            var r18Obj = new GameObject("Z1_R18_SentinelFoundry");
+            r18Obj.transform.SetParent(levelRoot, false);
+            CreateRoomBounds(r18Obj.transform, "Z1_R18", "Sentinel Foundry", new Vector3(154f, 36f, 0f), new Vector2(44f, 16f));
+            var geom18 = new GameObject("Geometry").transform; geom18.SetParent(r18Obj.transform, false);
+            var interact18 = new GameObject("Interactive").transform; interact18.SetParent(r18Obj.transform, false);
+
+            CreatePlatform(geom18, "Floor_Arena", new Vector3(154f, 27.5f, 0f), new Vector3(44f, 1f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
+            CreatePlatform(geom18, "Ceiling_Arena", new Vector3(154f, 44.5f, 0f), new Vector3(44f, 1f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
+            CreatePlatform(geom18, "Wall_East_Outer", new Vector3(176.5f, 36f, 0f), new Vector3(1f, 16f, 1f), neutralColor, sprNeutralPlat, neutralLayer);
+
+            CreateStation(interact18, "Station_BossGate", new Vector3(130f, 28f, 0f), sprStation, "station_boss");
+
+            var gate = new GameObject("Arena_Gate");
+            gate.transform.SetParent(r18Obj.transform, false);
+            gate.transform.position = new Vector3(133f, 34f, 0f);
+            gate.layer = neutralLayer;
+            gate.AddComponent<BoxCollider2D>().size = new Vector2(1f, 12f);
+            AddVisual(gate, boxSprite, new Vector2(1f, 12f), new Color(0.85f, 0.25f, 1f, 0.9f));
+            gate.SetActive(false); // the arena locks it when the fight starts
+
+            var bossGo = PlacePrefab("Assets/Prefabs/Bosses/Sentinel01.prefab", combatRoot, "Sentinel01", new Vector3(156f, 30.25f, 0f));
+            var arenaGo = new GameObject("BossArena_Sentinel01");
+            arenaGo.transform.SetParent(r18Obj.transform, false);
+            arenaGo.transform.position = new Vector3(154f, 36f, 0f);
+            var arenaBox = arenaGo.AddComponent<BoxCollider2D>();
+            arenaBox.isTrigger = true;
+            arenaBox.size = new Vector2(42f, 16f);
+
+            if (bossGo != null)
+            {
+                var sentinel = bossGo.GetComponent<Sentinel01>();
+                SetPrivate(sentinel, "missileWarningPrefab", EnsureMissileWarningPrefab(boxSprite));
+                SetPrivate(sentinel, "missileSpawnPoint", bossGo.transform.Find("MissileSpawn"));
+                SetPrivate(sentinel, "laserOrigin", bossGo.transform.Find("LaserOrigin"));
+
+                var rewardPoint = new GameObject("RewardPoint").transform;
+                rewardPoint.SetParent(arenaGo.transform, false);
+                rewardPoint.position = new Vector3(156f, 29f, 0f);
+                var stationPoint = new GameObject("StationPoint").transform;
+                stationPoint.SetParent(arenaGo.transform, false);
+                stationPoint.position = new Vector3(140f, 28f, 0f);
+
+                var arena = arenaGo.AddComponent<BossArena>();
+                arena.Configure(sentinel, gate,
+                    EnsurePickupPrefab(boxSprite, AbilityFlags.GravityInversion, "GRAVITON CORE (test reward)", new Color(0.4f, 1f, 0.7f, 1f)),
+                    rewardPoint,
+                    AssetDatabase.LoadAssetAtPath<GameObject>($"{PREFAB_DIR}/Environment/Station_Chrono_station_boss.prefab"),
+                    stationPoint);
+            }
         }
 
         /// <summary>Build order: the title screen first, then the game.</summary>
@@ -1383,7 +1534,7 @@ namespace EchoOfTheVoid.Editor
 
         static AutoRebuildHook()
         {
-            EditorApplication.delayCall += CheckRebuild;
+            EditorApplication.update += CheckRebuild;
         }
 
         private static void CheckRebuild()
